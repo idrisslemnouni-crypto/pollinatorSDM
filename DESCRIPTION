@@ -1,0 +1,22 @@
+Package: pollinatorSDM
+Title: Species Distribution Models for Pollinators and Pollination Deficit
+Version: 0.1.0
+Authors@R: person("Idriss", "Lemnouni", email = "idriss@example.com", role = c("aut", "cre"))
+Description: Models pollinator distribution, analyzes suitable habitats, estimates pollination services, and detects pollination deficit zones using SDM and landscape analysis.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports: 
+    terra,
+    sf,
+    randomForest,
+    ggplot2,
+    dplyr,
+    rmarkdown,
+    knitr
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+LazyData: true
+VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0

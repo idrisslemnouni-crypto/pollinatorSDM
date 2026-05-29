@@ -1,0 +1,23 @@
+---
+title: "Pollinator SDM Report"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(pollinatorSDM)
+```
+
+## Pollination Deficit Analysis
+
+This report was generated automatically by **pollinatorSDM**.
+
+### Species Studied
+- *Apis mellifera*
+- *Bombus terrestris*
+
+### Methodology
+Species Distribution Models (SDM) were built using Random Forest to estimate pollinator distribution and pollination deficit.
+
+### Outputs
+Maps and indices were computed for agricultural decision support.
