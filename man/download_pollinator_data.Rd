@@ -2,21 +2,24 @@
 % Please edit documentation in R/download_pollinator_data.R
 \name{download_pollinator_data}
 \alias{download_pollinator_data}
-\title{Download pollinator occurrence data}
+\title{Download pollinator occurrence data from GBIF}
 \usage{
 download_pollinator_data(
-  species = c("Apis mellifera", "Bombus terrestris"),
-  limit = 100
+  species = c("Apis mellifera", "Bombus terrestris", "Bombus lapidarius"),
+  limit = 100,
+  country = NULL
 )
 }
 \arguments{
 \item{species}{Character vector of species names}
 
 \item{limit}{Integer, max records per species}
+
+\item{country}{Optional country code}
 }
 \value{
 data.frame of occurrences
 }
 \description{
-Download pollinator occurrence data
+Download pollinator occurrence data from GBIF
 }

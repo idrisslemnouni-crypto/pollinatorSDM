@@ -7,10 +7,10 @@
 analyze_landscape(rasters)
 }
 \arguments{
-\item{rasters}{SpatRaster}
+\item{rasters}{SpatRaster with landcover layer}
 }
 \value{
-list
+data.frame
 }
 \description{
 Analyze landscape metrics

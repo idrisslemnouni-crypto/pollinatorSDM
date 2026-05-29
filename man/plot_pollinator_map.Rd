@@ -2,18 +2,18 @@
 % Please edit documentation in R/plot_pollinator_map.R
 \name{plot_pollinator_map}
 \alias{plot_pollinator_map}
-\title{Plot pollinator suitability map}
+\title{Plot pollinator distribution map}
 \usage{
-plot_pollinator_map(r, title = "Pollinator Suitability")
+plot_pollinator_map(prediction_raster, title = "Pollinator Suitability")
 }
 \arguments{
-\item{r}{SpatRaster}
+\item{prediction_raster}{SpatRaster}
 
 \item{title}{Character}
 }
 \value{
-ggplot
+ggplot object
 }
 \description{
-Plot pollinator suitability map
+Plot pollinator distribution map
 }

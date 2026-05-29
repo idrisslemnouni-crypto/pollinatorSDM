@@ -1,23 +1,61 @@
 ---
-title: "Pollinator SDM Report"
+title: "Rapport PollinatorSDM"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center")
 library(pollinatorSDM)
+library(terra)
+library(ggplot2)
 ```
 
-## Pollination Deficit Analysis
+## 1. Espèces étudiées
 
-This report was generated automatically by **pollinatorSDM**.
-
-### Species Studied
 - *Apis mellifera*
 - *Bombus terrestris*
+- *Bombus lapidarius*
 
-### Methodology
-Species Distribution Models (SDM) were built using Random Forest to estimate pollinator distribution and pollination deficit.
+## 2. Données d'occurrence
 
-### Outputs
-Maps and indices were computed for agricultural decision support.
+```{r}
+occ <- download_pollinator_data(limit = 30)
+occ_clean <- clean_occurrences(occ)
+```
+
+Occurrences nettoyées : `r nrow(occ_clean)` points.
+
+## 3. Modèle SDM
+
+```{r}
+n <- 50 * 50
+ext <- c(-10, 10, 30, 50)
+r1 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = rnorm(n, 15, 10))
+r2 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = rgamma(n, 2, 0.01))
+r3 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = sample(1:5, n, replace = TRUE))
+r4 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = runif(n, 0, 3000))
+env <- c(r1, r2, r3, r4)
+names(env) <- c("temperature", "precipitation", "landcover", "elevation")
+
+preds <- prepare_predictors(occ_clean, env)
+preds$presence <- 1
+bg <- generate_background_points(env, n = 500)
+bg$presence <- 0
+model <- train_sdm_model(preds, bg)
+ev <- evaluate_models(model, bg)
+```
+
+AUC : `r round(ev$metrics$AUC, 3)`
+
+## 4. Carte de distribution
+
+```{r, fig.width=7, fig.height=5}
+pred <- predict_pollinator_distribution(model, env)
+plot_pollinator_map(pred, "Suitabilité des pollinisateurs")
+```
+
+## 5. Recommandations
+
+```{r}
+generate_recommendations("eleve")
+```
