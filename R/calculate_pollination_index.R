@@ -4,7 +4,7 @@
 #' (dépendance pollinisation × surface cultivée).
 #'
 #' @param prediction_raster SpatRaster, suitability des pollinisateurs
-#' @param crop_demand_raster SpatRaster, demande agricole
+#' @param crop_demand_raster SpatRaster, demande agricole calculée
 #' @return SpatRaster
 #' @export
 calculate_pollination_index <- function(prediction_raster, crop_demand_raster) {

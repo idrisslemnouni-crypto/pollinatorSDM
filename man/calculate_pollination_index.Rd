@@ -9,7 +9,7 @@ calculate_pollination_index(prediction_raster, crop_demand_raster)
 \arguments{
 \item{prediction_raster}{SpatRaster, suitability des pollinisateurs}
 
-\item{crop_demand_raster}{SpatRaster, demande agricole}
+\item{crop_demand_raster}{SpatRaster, demande agricole calculée}
 }
 \value{
 SpatRaster

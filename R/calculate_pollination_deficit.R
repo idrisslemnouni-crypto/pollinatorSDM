@@ -1,7 +1,7 @@
 #' Calculate pollination deficit
 #'
 #' Déficit = index de pollinisation - offre (suitability).
-#' Valeurs négatives sont forcées à zéro (excès, pas déficit).
+#' Valeurs négatives sont forcées à zéro.
 #'
 #' @param prediction_raster SpatRaster, offre (suitability)
 #' @param pollination_index SpatRaster, index calculé

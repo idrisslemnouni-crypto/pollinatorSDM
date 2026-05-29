@@ -16,5 +16,5 @@ SpatRaster
 }
 \description{
 Déficit = index de pollinisation - offre (suitability).
-Valeurs négatives sont forcées à zéro (excès, pas déficit).
+Valeurs négatives sont forcées à zéro.
 }
