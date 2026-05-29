@@ -1,112 +1,102 @@
 ---
-title: "pollinatorSDM - Guide complet"
+title: "pollinatorSDM - Guide d'utilisation"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{pollinatorSDM - Guide complet}
+  %\VignetteIndexEntry{pollinatorSDM - Guide d'utilisation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
-library(pollinatorSDM)
-library(terra)
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
 ```
 
 ## Introduction
 
-Ce guide montre comment utiliser le package `pollinatorSDM` pour modéliser la distribution des pollinisateurs et évaluer les services de pollinisation en agroécologie.
+Ce package permet de modéliser la distribution de pollinisateurs et d'analyser les déficits de pollinisation.
 
-## Téléchargement des données
+## Chargement des données
 
-```{r}
-occ <- download_pollinator_data(limit = 20)
-head(occ)
+```{r setup}
+library(pollinatorSDM)
+
+# Télécharger les données pollinisateurs
+poll_data <- download_pollinator_data()
+
+# Télécharger les couches environnementales
+env_rasters <- download_environmental_layers()
+
+# Préparer les prédicteurs
+predictors <- prepare_predictors(poll_data, env_rasters)
 ```
 
-## Nettoyage des données
+## Modélisation
 
-```{r}
-occ_clean <- clean_occurrences(occ)$cleaned
-plot(occ_clean$geometry)
+```{r model}
+# Séparer les données d'entraînement et de test
+set.seed(42)
+train_data <- sample(nrow(predictors), 0.8 * nrow(predictors))
+train <- predictors[train_data, ]
+test <- predictors[-train_data, ]
+
+# Entraîner le modèle
+model <- train_sdm_model(train, method = "rf")
+
+# Évaluer le modèle
+evaluate_sdm_model(model, test)
+
+# Prédire la distribution
+pred <- predict_pollinator_distribution(model, env_rasters)
 ```
 
-## Variables environnementales
+## Analyse des habitats
 
-```{r}
-env <- download_environmental_layers()
+```{r habitat}
+# Analyser le paysage
+landscape_metrics <- analyze_landscape(env_rasters)
+
+# Visualiser les résultats
+plot_pollinator_map(pred, "Pollinator Suitability")
 ```
 
-## Préparation des prédicteurs
+## Services de pollinisation
 
-```{r}
-preds <- prepare_predictors(occ_clean, env)
-head(preds)
-```
-
-## Génération des points de fond
-
-```{r}
-bg <- generate_background_points(env, n = 500)
-bg$presence <- 0
-```
-
-## Entraînement du modèle SDM
-
-```{r}
-model_obj <- train_sdm_model(preds, bg)
-model <- model_obj$model
-```
-
-## Évaluation du modèle
-
-```{r}
-ev <- evaluate_models(model, bg)
-ev$metrics
-ev$roc_plot
-```
-
-## Prédiction de la distribution
-
-```{r}
-pred <- predict_pollinator_distribution(model, env)
-plot_pollinator_map(pred)
-```
-
-## Analyse paysagère
-
-```{r}
-landscape_stats <- analyze_landscape(env)
-landscape_stats
-```
-
-## Données agricoles
-
-```{r}
-# Cultures dépendantes de la pollinisation
+```{r pollination}
+# Données des cultures
 crops <- import_crop_data()
-crops
-```
 
-## Déficit de pollinisation
+# Calculer l'indice de pollinisation avec pondération par dépendance des cultures
+pollination_index <- calculate_pollination_index(pred, env_rasters, crop_data = crops)
 
-```{r}
-# Indice de pollinisation et déficit
-pollination_index <- calculate_pollination_index(pred, env)
-deficit <- calculate_pollination_deficit(pollination_index)
+# Calculer le déficit de pollinisation
+deficit <- calculate_pollination_deficit(pred, pollination_index, env_rasters)
+
+# Visualiser le déficit
 plot_pollination_deficit(deficit)
 ```
 
 ## Recommandations
 
-```{r}
-generate_recommendations("eleve")
+```{r recommendations}
+# Générer des recommandations
+recommendations <- generate_recommendations(pred, deficit, landscape_metrics)
+
+# Afficher les recommandations
+recommendations
 ```
 
-## Conclusion
+## Rapport
 
-Le package `pollinatorSDM` fournit un workflow complet pour l'évaluation des services de pollinisation en agroécologie.
-
-## Auteur
-
-Idriss Lemnouni — Étudiant ingénieur, IAV Hassan II
+```{r report, eval = FALSE}
+# Générer un rapport complet
+generate_report(
+  pollinator_data = poll_data,
+  model = model,
+  prediction_raster = pred,
+  pollination_deficit = deficit,
+  recommendations = recommendations
+)
+```

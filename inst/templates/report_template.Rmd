@@ -1,77 +1,60 @@
 ---
-title: "Rapport PollinatorSDM"
+title: "Rapport pollinatorSDM"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, fig.align = "center")
-library(pollinatorSDM)
-library(terra)
-library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 1. Espèces étudiées
+## Résumé
 
-- *Apis mellifera*
-- *Bombus terrestris*
-- *Bombus lapidarius*
+Ce rapport présente les résultats de l'analyse des services de pollinisation.
 
-## 2. Données d'occurrence
+## Données des pollinisateurs
 
 ```{r}
-occ <- download_pollinator_data(limit = 30)
-occ_clean <- clean_occurrences(occ)$cleaned
+pollinator_data
 ```
 
-Occurrences nettoyées : `r nrow(occ_clean)` points.
-
-## 3. Modèle SDM
+## Modèle SDM
 
 ```{r}
-n <- 50 * 50
-ext <- c(-10, 10, 30, 50)
-r1 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = rnorm(n, 15, 10))
-r2 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = rgamma(n, 2, 0.01))
-r3 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = sample(1:5, n, replace = TRUE))
-r4 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = runif(n, 0, 3000))
-env <- c(r1, r2, r3, r4)
-names(env) <- c("temperature", "precipitation", "landcover", "elevation")
-
-preds <- prepare_predictors(occ_clean, env)
-preds$presence <- 1
-bg <- generate_background_points(env, n = 500)
-bg$presence <- 0
-model_obj <- train_sdm_model(preds, bg)
-model <- model_obj$model
-ev <- evaluate_models(model, bg)
+summary(model)
 ```
 
-AUC : `r round(ev$metrics$AUC, 3)`
-
-## 4. Carte de distribution
-
-```{r, fig.width=7, fig.height=5}
-pred <- predict_pollinator_distribution(model, env)
-plot_pollinator_map(pred, "Suitabilité des pollinisateurs")
-```
-
-## 5. Données agricoles
+## Prédiction de distribution
 
 ```{r}
-crops <- import_crop_data()
+plot(prediction_raster)
+```
+
+## Cultures et dépendance pollinisation
+
+```{r}
+crops <- pollinatorSDM::import_crop_data()
 crops
 ```
 
-## 6. Déficit de pollinisation
-
-```{r, fig.width=7, fig.height=5}
-pollination_index <- calculate_pollination_index(pred, env)
-deficit <- calculate_pollination_deficit(pollination_index)
-plot_pollination_deficit(deficit)
-```
-
-## 7. Recommandations
+## Indice de pollinisation
 
 ```{r}
-generate_recommendations("eleve")
+pollination_index <- pollinatorSDM::calculate_pollination_index(
+  prediction_raster, 
+  env_rasters, 
+  crop_data = crops
+)
+plot(pollination_index)
+```
+
+## Déficit de pollinisation
+
+```{r}
+plot(pollination_deficit)
+```
+
+## Recommandations
+
+```{r}
+recommendations
 ```

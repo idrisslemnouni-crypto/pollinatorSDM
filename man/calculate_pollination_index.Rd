@@ -4,10 +4,14 @@
 \alias{calculate_pollination_index}
 \title{Calculate pollination index}
 \usage{
-calculate_pollination_index(raster_list)
+calculate_pollination_index(prediction_raster, env_rasters, crop_data = NULL)
 }
 \arguments{
-\item{raster_list}{List of SpatRaster (one per species)}
+\item{prediction_raster}{SpatRaster}
+
+\item{env_rasters}{SpatRaster}
+
+\item{crop_data}{Optional data.frame with dependence_pollination column}
 }
 \value{
 SpatRaster
