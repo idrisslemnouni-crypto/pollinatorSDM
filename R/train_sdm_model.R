@@ -1,29 +1,28 @@
-#' Train SDM with Random Forest
-#' @param presence data.frame with predictors
-#' @param background data.frame with predictors
-#' @return randomForest model
+#' Train Species Distribution Model
+#' @param presence_data data.frame
+#' @param background_data data.frame
+#' @param method Character
+#' @return list with model, train_data, test_data
 #' @export
-train_sdm_model <- function(presence, background) {
-  presence$presence <- 1
+train_sdm_model <- function(presence_data, background_data, method = "rf") {
+  presence_data <- as.data.frame(presence_data)
+  background_data <- as.data.frame(background_data)
+  presence_data <- presence_data[, !sapply(presence_data, is.character)]
+  background_data <- background_data[, !sapply(background_data, is.character)]
+  presence_data <- presence_data[, !sapply(presence_data, function(x) is.list(x) || inherits(x, "sfc"))]
+  background_data <- background_data[, !sapply(background_data, function(x) is.list(x) || inherits(x, "sfc"))]
+  presence_data$presence <- 1
+  background_data$presence <- 0
+  common_cols <- intersect(names(presence_data), names(background_data))
+  combined <- rbind(presence_data[, common_cols], background_data[, common_cols])
+  combined <- na.omit(combined)
+  combined$presence <- factor(combined$presence)
 
-  # Retirer colonnes non-numériques et geometry
-  presence <- as.data.frame(presence)
-  presence <- presence[, !sapply(presence, function(x) is.list(x) || inherits(x, "sfc"))]
+  set.seed(42)
+  train_idx <- sample(1:nrow(combined), 0.8 * nrow(combined))
+  train_data <- combined[train_idx, ]
+  test_data <- combined[-train_idx, ]
 
-  background <- as.data.frame(background)
-  background <- background[, !sapply(background, function(x) is.list(x) || inherits(x, "sfc"))]
-
-  # Conserver seulement les colonnes communes + presence
-  common <- intersect(names(presence), names(background))
-  common <- setdiff(common, "presence")
-
-  presence <- presence[, c("presence", common)]
-  background <- background[, c("presence", common)]
-
-  all <- rbind(presence, background)
-  all <- all[, !sapply(all, is.character)]
-  all <- na.omit(all)
-  all$presence <- as.factor(all$presence)
-
-  randomForest::randomForest(presence ~ ., data = all, ntree = 100)
+  model <- caret::train(presence ~ ., data = train_data, method = method, trControl = caret::trainControl(method = "cv", number = 5))
+  list(model = model, train_data = train_data, test_data = test_data)
 }

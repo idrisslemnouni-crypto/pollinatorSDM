@@ -1,7 +1,7 @@
 #' Evaluate SDM models
 #' @param model Fitted model
 #' @param test_data Test dataset
-#' @return list with metrics and plot
+#' @return list with metrics, roc_plot, obs_pred_plot
 #' @export
 evaluate_models <- function(model, test_data) {
   test_data <- as.data.frame(test_data)
@@ -15,6 +15,7 @@ evaluate_models <- function(model, test_data) {
   if(is.factor(obs)) obs <- as.numeric(as.character(obs))
 
   cm <- table(obs, pred_class)
+
   auc <- tryCatch({
     p <- pred_prob[obs==1]; a <- pred_prob[obs==0]
     r <- rank(c(p, a))
@@ -41,10 +42,19 @@ evaluate_models <- function(model, test_data) {
                   x = "False Positive Rate", y = "Sensitivity") +
     ggplot2::theme_minimal()
 
+  obs_pred_df <- data.frame(
+    observed = factor(obs, labels = c("Absence", "Presence")),
+    predicted = factor(pred_class, labels = c("Absence", "Presence"))
+  )
+  obs_pred_plot <- ggplot2::ggplot(obs_pred_df, ggplot2::aes(x = observed, fill = predicted)) +
+    ggplot2::geom_bar(position = "dodge") +
+    ggplot2::labs(title = "Observed vs Predicted", x = "Observed", y = "Count") +
+    ggplot2::theme_minimal()
+
   metrics <- data.frame(AUC = auc,
                         Accuracy = sum(diag(cm))/sum(cm),
                         Sensitivity = cm[2,2]/sum(cm[2,]),
                         Specificity = cm[1,1]/sum(cm[1,]))
 
-  list(metrics = metrics, roc_plot = roc_plot)
+  list(metrics = metrics, roc_plot = roc_plot, obs_pred_plot = obs_pred_plot)
 }

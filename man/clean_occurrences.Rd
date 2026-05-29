@@ -2,16 +2,16 @@
 % Please edit documentation in R/clean_occurrences.R
 \name{clean_occurrences}
 \alias{clean_occurrences}
-\title{Clean occurrence coordinates}
+\title{Clean occurrence data}
 \usage{
-clean_occurrences(df)
+clean_occurrences(occurrences)
 }
 \arguments{
-\item{df}{data.frame with decimalLongitude, decimalLatitude}
+\item{occurrences}{data.frame}
 }
 \value{
-sf object
+list with cleaned data and report
 }
 \description{
-Clean occurrence coordinates
+Clean occurrence data
 }

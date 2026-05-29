@@ -2,18 +2,20 @@
 % Please edit documentation in R/train_sdm_model.R
 \name{train_sdm_model}
 \alias{train_sdm_model}
-\title{Train SDM with Random Forest}
+\title{Train Species Distribution Model}
 \usage{
-train_sdm_model(presence, background)
+train_sdm_model(presence_data, background_data, method = "rf")
 }
 \arguments{
-\item{presence}{data.frame with predictors}
+\item{presence_data}{data.frame}
 
-\item{background}{data.frame with predictors}
+\item{background_data}{data.frame}
+
+\item{method}{Character}
 }
 \value{
-randomForest model
+list with model, train_data, test_data
 }
 \description{
-Train SDM with Random Forest
+Train Species Distribution Model
 }

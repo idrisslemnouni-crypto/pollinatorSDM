@@ -2,12 +2,12 @@
 % Please edit documentation in R/prepare_predictors.R
 \name{prepare_predictors}
 \alias{prepare_predictors}
-\title{Prepare environmental predictors for SDM}
+\title{Prepare environmental predictors}
 \usage{
 prepare_predictors(occurrences, rasters)
 }
 \arguments{
-\item{occurrences}{sf object}
+\item{occurrences}{data.frame or sf or list}
 
 \item{rasters}{SpatRaster}
 }
@@ -15,5 +15,5 @@ prepare_predictors(occurrences, rasters)
 data.frame
 }
 \description{
-Prepare environmental predictors for SDM
+Prepare environmental predictors
 }

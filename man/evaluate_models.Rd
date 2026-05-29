@@ -12,7 +12,7 @@ evaluate_models(model, test_data)
 \item{test_data}{Test dataset}
 }
 \value{
-list with metrics and plot
+list with metrics, roc_plot, obs_pred_plot
 }
 \description{
 Evaluate SDM models
