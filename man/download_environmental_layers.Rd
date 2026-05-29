@@ -4,18 +4,10 @@
 \alias{download_environmental_layers}
 \title{Download environmental layers}
 \usage{
-download_environmental_layers(
-  variables = c("temperature", "precipitation", "landcover", "elevation"),
-  extent = c(-15, 25, 25, 55)
-)
-}
-\arguments{
-\item{variables}{Character vector of variables}
-
-\item{extent}{Numeric extent vector}
+download_environmental_layers()
 }
 \value{
-SpatRaster
+list of SpatRaster
 }
 \description{
 Download environmental layers
