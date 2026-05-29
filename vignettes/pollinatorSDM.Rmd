@@ -1,8 +1,8 @@
 ---
-title: "pollinatorSDM - Guide d'utilisation"
+title: "pollinatorSDM - Guide d'utilisation avance"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{pollinatorSDM - Guide d'utilisation}
+  %\VignetteIndexEntry{pollinatorSDM - Guide d'utilisation avance}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -16,82 +16,88 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Ce package permet de modéliser la distribution de pollinisateurs et d'analyser les déficits de pollinisation.
+Ce package modélise la distribution de pollinisateurs au Maroc avec des données réelles (GBIF, WorldClim, landcover ESA), analyse les habitats favorables, et évalue le déficit de pollinisation pour les cultures dépendantes.
 
-## Chargement des données
+## Chargement des données réelles
 
-```{r setup}
+```{r}
 library(pollinatorSDM)
 
-# Télécharger les données pollinisateurs
+# Données pollinisateurs : GBIF réel pour le Maroc
 poll_data <- download_pollinator_data()
+head(poll_data)
 
-# Télécharger les couches environnementales
-env_rasters <- download_environmental_layers()
-
-# Préparer les prédicteurs
-predictors <- prepare_predictors(poll_data, env_rasters)
+# Couches environnementales : WorldClim + ESA WorldCover
+env <- download_environmental_layers()
+names(env)
 ```
 
-## Modélisation
+## Modélisation SDM avec RandomForest
 
-```{r model}
-# Séparer les données d'entraînement et de test
-set.seed(42)
-train_data <- sample(nrow(predictors), 0.8 * nrow(predictors))
-train <- predictors[train_data, ]
-test <- predictors[-train_data, ]
+```{r}
+# Extraire prédicteurs aux points d'occurrence
+occ_spat <- terra::vect(poll_data[, c("decimalLongitude", "decimalLatitude")], crs = "EPSG:4326")
+occ_extract <- terra::extract(env, occ_spat, df = TRUE, ID = FALSE)
+occ_extract <- occ_extract[complete.cases(occ_extract), ]
+occ_extract$presence <- as.factor("1")
 
-# Entraîner le modèle
-model <- train_sdm_model(train, method = "rf")
+# Background points aléatoires
+set.seed(123)
+bg_spat <- terra::spatSample(env[], size = 1000, method = "random", xy = TRUE, values = FALSE)[1]
+bg_coords <- terra::vect(bg_spat, crs = terra::crs(env))
+bg_extract <- terra::extract(env, bg_coords, df = TRUE, ID = FALSE)
+bg_extract <- bg_extract[complete.cases(bg_extract), ]
+bg_extract$presence <- as.factor("0")
 
-# Évaluer le modèle
-evaluate_sdm_model(model, test)
+# Entraînement RandomForest
+combined <- rbind(occ_extract, bg_extract)
+model <- randomForest::randomForest(presence ~ ., data = combined, ntree = 500)
 
-# Prédire la distribution
-pred <- predict_pollinator_distribution(model, env_rasters)
+# Prédiction raster
+pred <- terra::predict(env, model, type = "prob")[][2]
+names(pred) <- "suitability"
+terra::plot(pred, main = "Pollinator Suitability")
 ```
 
-## Analyse des habitats
+## Carte des cultures et calcul de la demande
 
-```{r habitat}
-# Analyser le paysage
-landscape_metrics <- analyze_landscape(env_rasters)
+```{r}
+# Données cultures
+crop_dep <- import_crop_data()
+crop_map <- import_crop_map("data-raw/crop_map.gpkg")
+crop_map <- merge(crop_map, crop_dep, by.x = "crop_type", by.y = "crop_name", all.x = TRUE)
+crop_map$area_ha <- as.numeric(sf::st_area(crop_map)) / 10000
 
-# Visualiser les résultats
-plot_pollinator_map(pred, "Pollinator Suitability")
+# Rasteriser la demande agricole
+crop_vect <- terra::vect(crop_map)
+crop_demand <- terra::rasterize(crop_vect, pred, field = "dependence_pollination", fun = "mean", background = 0)
+crop_area <- terra::rasterize(crop_vect, pred, field = "area_ha", fun = "sum", background = 0)
+agri_demand <- crop_demand * crop_area
 ```
 
-## Services de pollinisation
+## Indice de pollinisation et déficit
 
-```{r pollination}
-# Données des cultures
-crops <- import_crop_data()
+```{r}
+pollination_index <- calculate_pollination_index(pred, agri_demand)
+deficit <- calculate_pollination_deficit(pred, pollination_index)
 
-# Calculer l'indice de pollinisation avec pondération par dépendance des cultures
-pollination_index <- calculate_pollination_index(pred, env_rasters, crop_data = crops)
-
-# Calculer le déficit de pollinisation
-deficit <- calculate_pollination_deficit(pred, pollination_index, env_rasters)
-
-# Visualiser le déficit
-plot_pollination_deficit(deficit)
+terra::plot(pollination_index, main = "Pollination Index")
+terra::plot(deficit, main = "Pollination Deficit")
 ```
 
-## Recommandations
+## Analyse paysagère et recommandations
 
-```{r recommendations}
-# Générer des recommandations
-recommendations <- generate_recommendations(pred, deficit, landscape_metrics)
+```{r}
+landscape <- analyze_landscape(env)
+terra::plot(landscape$patches_raster, main = "Habitat Patches")
 
-# Afficher les recommandations
+recommendations <- generate_recommendations(pred, deficit, landscape)
 recommendations
 ```
 
-## Rapport
+## Rapport automatique
 
-```{r report, eval = FALSE}
-# Générer un rapport complet
+```{r, eval = FALSE}
 generate_report(
   pollinator_data = poll_data,
   model = model,
