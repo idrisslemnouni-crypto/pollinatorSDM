@@ -2,16 +2,16 @@
 % Please edit documentation in R/import_crop_data.R
 \name{import_crop_data}
 \alias{import_crop_data}
-\title{Import crop dependency data}
+\title{Import crop pollination data}
 \usage{
-import_crop_data(source = "example")
+import_crop_data(file_path = NULL)
 }
 \arguments{
-\item{source}{Character source type}
+\item{file_path}{Optional path to CSV file}
 }
 \value{
-data.frame
+data.frame with crop dependencies
 }
 \description{
-Import crop dependency data
+Import crop pollination data
 }

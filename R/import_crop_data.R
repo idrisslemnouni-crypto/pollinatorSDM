@@ -1,12 +1,12 @@
-#' Import crop dependency data
-#' @param source Character source type
-#' @return data.frame
+#' Import crop pollination data
+#' @param file_path Optional path to CSV file
+#' @return data.frame with crop dependencies
 #' @export
-import_crop_data <- function(source = "example") {
-  data.frame(
-    crop = c("amandier", "pommier", "tournesol", "colza", "tomate"),
-    pollination_dependence = c("elevee", "elevee", "moderee", "moderee", "faible"),
-    dependence_score = c(0.9, 0.8, 0.6, 0.5, 0.3),
-    surface_ha = c(100, 200, 150, 300, 80)
-  )
+import_crop_data <- function(file_path = NULL) {
+  if (!is.null(file_path) && file.exists(file_path)) {
+    read.csv(file_path, stringsAsFactors = FALSE)
+  } else {
+    data("crop_dependencies", package = "pollinatorSDM", envir = environment())
+    crop_dependencies
+  }
 }

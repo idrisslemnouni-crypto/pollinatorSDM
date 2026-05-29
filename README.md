@@ -58,6 +58,17 @@ alt="Carte de suitabilité des pollinisateurs" />
 pollinisateurs</figcaption>
 </figure>
 
+## Cultures dépendantes de la pollinisation
+
+``` r
+# Données agricoles
+crops <- import_crop_data()
+crops
+
+# Indice de pollinisation
+pollination_index <- calculate_pollination_index(pred, env)
+```
+
 ## Fonctions principales
 
 - **Acquisition** : `download_pollinator_data()`,

@@ -8,7 +8,7 @@ output: github_document
 
 ## Description
 
-`pollinatorSDM` est un package R complet pour la modélisation de la distribution des pollinisateurs et l'évaluation des services de pollinisation. Il combine données d'occurrence, modèles de distribution d'espèces (SDM), analyse paysagère et cartographie du déficit de pollinisation pour l'agroécologie.
+`pollinatorSDM` est un package R complet pour la modélisation de la distribution des pollinisateurs et l’évaluation des services de pollinisation. Il combine données d’occurrence, modèles de distribution d’espèces (SDM), analyse paysagère et cartographie du déficit de pollinisation pour l’agroécologie.
 
 ## Installation
 
@@ -50,6 +50,17 @@ plot_pollinator_map(pred)
 ```
 
 ![Carte de suitabilité des pollinisateurs](README-example.png)
+
+## Cultures dépendantes de la pollinisation
+
+```r
+# Données agricoles
+crops <- import_crop_data()
+crops
+
+# Indice de pollinisation
+pollination_index <- calculate_pollination_index(pred, env)
+```
 
 ## Fonctions principales
 

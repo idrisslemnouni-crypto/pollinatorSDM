@@ -1,27 +1,112 @@
-```{r}
+---
+title: "pollinatorSDM - Guide complet"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{pollinatorSDM - Guide complet}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 library(pollinatorSDM)
 library(terra)
+```
 
-n <- 50 * 50
-ext <- c(-10, 10, 30, 50)
+## Introduction
 
-r1 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = rnorm(n, 15, 10))
-r2 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = rgamma(n, 2, 0.01))
-r3 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = sample(1:5, n, replace = TRUE))
-r4 <- rast(nrows = 50, ncols = 50, crs = "EPSG:4326", extent = ext, vals = runif(n, 0, 3000))
+Ce guide montre comment utiliser le package `pollinatorSDM` pour modéliser la distribution des pollinisateurs et évaluer les services de pollinisation en agroécologie.
 
-env_rasters <- c(r1, r2, r3, r4)
-names(env_rasters) <- c("temperature", "precipitation", "landcover", "elevation")
+## Téléchargement des données
 
+```{r}
 occ <- download_pollinator_data(limit = 20)
-occ_clean <- clean_occurrences(occ)
-preds <- prepare_predictors(occ_clean, env_rasters)
-preds$presence <- 1
+head(occ)
+```
 
-bg <- generate_background_points(env_rasters, n = 500)
+## Nettoyage des données
+
+```{r}
+occ_clean <- clean_occurrences(occ)$cleaned
+plot(occ_clean$geometry)
+```
+
+## Variables environnementales
+
+```{r}
+env <- download_environmental_layers()
+```
+
+## Préparation des prédicteurs
+
+```{r}
+preds <- prepare_predictors(occ_clean, env)
+head(preds)
+```
+
+## Génération des points de fond
+
+```{r}
+bg <- generate_background_points(env, n = 500)
 bg$presence <- 0
+```
 
-model <- train_sdm_model(preds, bg)
-pred <- predict_pollinator_distribution(model, env_rasters)
+## Entraînement du modèle SDM
+
+```{r}
+model_obj <- train_sdm_model(preds, bg)
+model <- model_obj$model
+```
+
+## Évaluation du modèle
+
+```{r}
+ev <- evaluate_models(model, bg)
+ev$metrics
+ev$roc_plot
+```
+
+## Prédiction de la distribution
+
+```{r}
+pred <- predict_pollinator_distribution(model, env)
 plot_pollinator_map(pred)
 ```
+
+## Analyse paysagère
+
+```{r}
+landscape_stats <- analyze_landscape(env)
+landscape_stats
+```
+
+## Données agricoles
+
+```{r}
+# Cultures dépendantes de la pollinisation
+crops <- import_crop_data()
+crops
+```
+
+## Déficit de pollinisation
+
+```{r}
+# Indice de pollinisation et déficit
+pollination_index <- calculate_pollination_index(pred, env)
+deficit <- calculate_pollination_deficit(pollination_index)
+plot_pollination_deficit(deficit)
+```
+
+## Recommandations
+
+```{r}
+generate_recommendations("eleve")
+```
+
+## Conclusion
+
+Le package `pollinatorSDM` fournit un workflow complet pour l'évaluation des services de pollinisation en agroécologie.
+
+## Auteur
+
+Idriss Lemnouni — Étudiant ingénieur, IAV Hassan II

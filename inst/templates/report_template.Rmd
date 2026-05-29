@@ -20,7 +20,7 @@ library(ggplot2)
 
 ```{r}
 occ <- download_pollinator_data(limit = 30)
-occ_clean <- clean_occurrences(occ)
+occ_clean <- clean_occurrences(occ)$cleaned
 ```
 
 Occurrences nettoyées : `r nrow(occ_clean)` points.
@@ -41,7 +41,8 @@ preds <- prepare_predictors(occ_clean, env)
 preds$presence <- 1
 bg <- generate_background_points(env, n = 500)
 bg$presence <- 0
-model <- train_sdm_model(preds, bg)
+model_obj <- train_sdm_model(preds, bg)
+model <- model_obj$model
 ev <- evaluate_models(model, bg)
 ```
 
@@ -54,7 +55,22 @@ pred <- predict_pollinator_distribution(model, env)
 plot_pollinator_map(pred, "Suitabilité des pollinisateurs")
 ```
 
-## 5. Recommandations
+## 5. Données agricoles
+
+```{r}
+crops <- import_crop_data()
+crops
+```
+
+## 6. Déficit de pollinisation
+
+```{r, fig.width=7, fig.height=5}
+pollination_index <- calculate_pollination_index(pred, env)
+deficit <- calculate_pollination_deficit(pollination_index)
+plot_pollination_deficit(deficit)
+```
+
+## 7. Recommandations
 
 ```{r}
 generate_recommendations("eleve")
