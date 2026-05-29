@@ -49,8 +49,14 @@ pred <- predict_pollinator_distribution(model, env)
 
 # Carte
 plot_pollinator_map(pred)
-![Carte de suitabilité des pollinisateurs](README-example.png)
 ```
+
+<figure>
+<img src="README-example.png"
+alt="Carte de suitabilité des pollinisateurs" />
+<figcaption aria-hidden="true">Carte de suitabilité des
+pollinisateurs</figcaption>
+</figure>
 
 ## Fonctions principales
 
