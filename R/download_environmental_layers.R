@@ -1,53 +1,64 @@
 #' Download environmental layers
-#' @return list of SpatRaster
+#'
+#' Télécharge les données climatiques WorldClim et les couches landcover ESA
+#' pour le Maroc via geodata.
+#'
+#' @return SpatRaster stack
 #' @export
+#' @examples
+#' \dontrun{
+#'   env <- download_environmental_layers()
+#'   names(env)
+#' }
 download_environmental_layers <- function() {
-  if (requireNamespace("geodata", quietly = TRUE)) {
-    message("Downloading WorldClim data for Morocco (this may take 1-2 minutes)...")
-
-    tdir <- tempdir()
-
-    # WorldClim Bioclim: BIO1 = mean temp, BIO12 = annual precipitation
-    wc <- geodata::worldclim_country(country = "Morocco", var = "bio", res = 5, path = tdir)
-    temp_raster <- wc[[1]]
-    prec_raster <- wc[[12]]
-
-    # Elevation
-    alt_raster <- geodata::elevation_30s(country = "Morocco", path = tdir)
-
-    # Landcover (tree cover fraction), resampled to same grid
-    lc <- tryCatch({
-      lcov <- geodata::landcover(var = "trees", path = tdir)
-      terra::resample(lcov, temp_raster, method = "near")
-    }, error = function(e) {
-      message("Real landcover unavailable, using simulated fallback")
-      terra::rast(nrows = terra::nrow(temp_raster),
-                  ncols = terra::ncol(temp_raster),
-                  xmin = terra::xmin(temp_raster),
-                  xmax = terra::xmax(temp_raster),
-                  ymin = terra::ymin(temp_raster),
-                  ymax = terra::ymax(temp_raster),
-                  crs = terra::crs(temp_raster),
-                  vals = sample(1:5, terra::ncell(temp_raster), replace = TRUE))
-    })
-
-    names(temp_raster) <- "temperature"
-    names(prec_raster) <- "precipitation"
-    names(alt_raster) <- "altitude"
-    names(lc) <- "landcover"
-
-  } else {
-    message("Package 'geodata' not installed. Using simulated data.")
-    ext <- terra::ext(-10, 0, 28, 36)
-    temp_raster <- terra::rast(nrows = 50, ncols = 50, extent = ext, crs = "EPSG:4326", vals = rnorm(2500, 18, 5))
-    prec_raster <- terra::rast(nrows = 50, ncols = 50, extent = ext, crs = "EPSG:4326", vals = rgamma(2500, shape = 2, scale = 150))
-    alt_raster <- terra::rast(nrows = 50, ncols = 50, extent = ext, crs = "EPSG:4326", vals = runif(2500, 0, 1500))
-    lc <- terra::rast(nrows = 50, ncols = 50, extent = ext, crs = "EPSG:4326", vals = sample(1:5, 2500, replace = TRUE))
-    names(temp_raster) <- "temperature"
-    names(prec_raster) <- "precipitation"
-    names(alt_raster) <- "altitude"
-    names(lc) <- "landcover"
+  if (!requireNamespace("geodata", quietly = TRUE)) {
+    stop(
+      "Package 'geodata' is required. ",
+      "Install with: install.packages('geodata')"
+    )
   }
 
-  list(temp_raster = temp_raster, prec_raster = prec_raster, alt_raster = alt_raster, landcover = lc)
+  tdir <- tempdir()
+
+  message("Downloading WorldClim bioclim for Morocco...")
+  wc <- geodata::worldclim_country(country = "Morocco", var = "bio", res = 5, path = tdir)
+
+  message("Downloading elevation...")
+  elevation <- geodata::elevation_30s(country = "Morocco", path = tdir)
+
+  temp <- wc[[1]]
+  prec <- wc[[12]]
+
+  message("Downloading landcover layers...")
+  lc_vars <- c("cropland", "trees", "grassland", "shrubs", "built", "water")
+
+  lc_layers <- lapply(lc_vars, function(v) {
+    message("  - ", v)
+    r <- tryCatch(
+      geodata::landcover(var = v, path = tdir),
+      error = function(e) NULL
+    )
+    if (is.null(r)) {
+      message("    (unavailable, using zero raster)")
+      terra::rast(nrows = terra::nrow(temp), ncols = terra::ncol(temp),
+                  xmin = terra::xmin(temp), xmax = terra::xmax(temp),
+                  ymin = terra::ymin(temp), ymax = terra::ymax(temp),
+                  crs = terra::crs(temp), vals = 0)
+    } else {
+      terra::resample(r, temp, method = "bilinear")
+    }
+  })
+
+  elevation <- terra::resample(elevation, temp, method = "bilinear")
+
+  env <- c(temp, prec, elevation, lc_layers[[1]], lc_layers[[2]],
+           lc_layers[[3]], lc_layers[[4]], lc_layers[[5]], lc_layers[[6]])
+
+  names(env) <- c(
+    "temperature", "precipitation", "altitude",
+    "cropland", "trees", "grassland", "shrubs", "built", "water"
+  )
+
+  message("Environmental stack ready: ", length(names(env)), " layers")
+  env
 }

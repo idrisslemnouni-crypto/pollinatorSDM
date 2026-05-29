@@ -4,22 +4,18 @@
 \alias{download_pollinator_data}
 \title{Download pollinator occurrence data from GBIF}
 \usage{
-download_pollinator_data(
-  species = c("Apis mellifera", "Bombus terrestris", "Bombus lapidarius"),
-  limit = 100,
-  country = NULL
-)
-}
-\arguments{
-\item{species}{Character vector of species names}
-
-\item{limit}{Integer, max records per species}
-
-\item{country}{Optional country code}
+download_pollinator_data()
 }
 \value{
-data.frame of occurrences
+data.frame avec colonnes species, longitude, latitude, year, basisOfRecord
 }
 \description{
-Download pollinator occurrence data from GBIF
+Télécharge les occurrences réelles des trois pollinisateurs étudiés
+pour le Maroc via l'API GBIF.
+}
+\examples{
+\dontrun{
+  poll_data <- download_pollinator_data()
+  head(poll_data)
+}
 }

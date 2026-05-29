@@ -4,16 +4,17 @@
 \alias{calculate_pollination_deficit}
 \title{Calculate pollination deficit}
 \usage{
-calculate_pollination_deficit(pollination_index, crop_needs = 0.5)
+calculate_pollination_deficit(prediction_raster, pollination_index)
 }
 \arguments{
-\item{pollination_index}{SpatRaster}
+\item{prediction_raster}{SpatRaster, offre (suitability)}
 
-\item{crop_needs}{SpatRaster or numeric threshold}
+\item{pollination_index}{SpatRaster, index calculé}
 }
 \value{
 SpatRaster
 }
 \description{
-Calculate pollination deficit
+Déficit = index de pollinisation - offre (suitability).
+Valeurs négatives sont forcées à zéro (excès, pas déficit).
 }

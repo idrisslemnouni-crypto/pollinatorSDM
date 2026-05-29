@@ -1,17 +1,14 @@
-#' Calculate pollination index
-#' @param prediction_raster SpatRaster
-#' @param env_rasters SpatRaster
-#' @param crop_data Optional data.frame with dependence_pollination column
+#' Calculate pollination service index
+#'
+#' Multiplie la suitability des pollinisateurs par la demande agricole
+#' (dépendance pollinisation × surface cultivée).
+#'
+#' @param prediction_raster SpatRaster, suitability des pollinisateurs
+#' @param crop_demand_raster SpatRaster, demande agricole
 #' @return SpatRaster
 #' @export
-calculate_pollination_index <- function(prediction_raster, env_rasters, crop_data = NULL) {
-  base_index <- terra::app(prediction_raster, fun = function(x) mean(x, na.rm = TRUE))
-
-  if (!is.null(crop_data) && "dependence_pollination" %in% names(crop_data)) {
-    mean_dep <- mean(crop_data$dependence_pollination, na.rm = TRUE)
-    base_index <- base_index * mean_dep
-  }
-
-  names(base_index) <- "pollination_index"
-  return(base_index)
+calculate_pollination_index <- function(prediction_raster, crop_demand_raster) {
+  pollination_index <- prediction_raster * crop_demand_raster
+  names(pollination_index) <- "pollination_index"
+  pollination_index
 }

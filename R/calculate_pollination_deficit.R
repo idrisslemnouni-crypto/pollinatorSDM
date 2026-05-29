@@ -1,9 +1,15 @@
 #' Calculate pollination deficit
-#' @param pollination_index SpatRaster
-#' @param crop_needs SpatRaster or numeric threshold
+#'
+#' Déficit = index de pollinisation - offre (suitability).
+#' Valeurs négatives sont forcées à zéro (excès, pas déficit).
+#'
+#' @param prediction_raster SpatRaster, offre (suitability)
+#' @param pollination_index SpatRaster, index calculé
 #' @return SpatRaster
 #' @export
-calculate_pollination_deficit <- function(pollination_index, crop_needs = 0.5) {
-  m <- matrix(c(0, crop_needs*0.5, 1, crop_needs*0.5, crop_needs*1.5, 2, crop_needs*1.5, 1, 3), ncol=3, byrow=TRUE)
-  terra::classify(pollination_index, m)
+calculate_pollination_deficit <- function(prediction_raster, pollination_index) {
+  deficit <- pollination_index - prediction_raster
+  deficit[deficit < 0] <- 0
+  names(deficit) <- "pollination_deficit"
+  deficit
 }

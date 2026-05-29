@@ -2,20 +2,19 @@
 % Please edit documentation in R/calculate_pollination_index.R
 \name{calculate_pollination_index}
 \alias{calculate_pollination_index}
-\title{Calculate pollination index}
+\title{Calculate pollination service index}
 \usage{
-calculate_pollination_index(prediction_raster, env_rasters, crop_data = NULL)
+calculate_pollination_index(prediction_raster, crop_demand_raster)
 }
 \arguments{
-\item{prediction_raster}{SpatRaster}
+\item{prediction_raster}{SpatRaster, suitability des pollinisateurs}
 
-\item{env_rasters}{SpatRaster}
-
-\item{crop_data}{Optional data.frame with dependence_pollination column}
+\item{crop_demand_raster}{SpatRaster, demande agricole}
 }
 \value{
 SpatRaster
 }
 \description{
-Calculate pollination index
+Multiplie la suitability des pollinisateurs par la demande agricole
+(dépendance pollinisation × surface cultivée).
 }

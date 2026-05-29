@@ -7,8 +7,15 @@
 download_environmental_layers()
 }
 \value{
-list of SpatRaster
+SpatRaster stack
 }
 \description{
-Download environmental layers
+Télécharge les données climatiques WorldClim et les couches landcover ESA
+pour le Maroc via geodata.
+}
+\examples{
+\dontrun{
+  env <- download_environmental_layers()
+  names(env)
+}
 }

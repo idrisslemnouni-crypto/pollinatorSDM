@@ -1,23 +1,55 @@
-#' Analyze landscape metrics
-#' @param rasters SpatRaster with landcover layer
-#' @return data.frame
+#' Analyze landscape
+#'
+#' Analyse la fragmentation des habitats et les métriques paysagères.
+#'
+#' @param env_rasters SpatRaster stack environnemental
+#' @return list de métriques paysagères
 #' @export
-analyze_landscape <- function(rasters) {
-  lc <- rasters[[3]]
-  natural <- lc %in% c(1, 2)
-  patches <- terra::patches(natural, directions = 8)
-  f <- terra::freq(patches)
-  sizes <- f[!is.na(f[,2]) & f[,2] > 0, 3]
+analyze_landscape <- function(env_rasters) {
+  lc_names <- c("landcover", "trees", "grassland", "shrubs", "cropland")
+  lc_idx <- which(names(env_rasters) %in% lc_names)[1]
 
-  semi <- lc %in% c(3)
-  dist <- terra::gridDistance(semi, origin = 1)
+  if (is.na(lc_idx)) {
+    stop("No landcover layer found in environmental rasters.")
+  }
 
-  data.frame(
-    n_patches = length(sizes),
-    mean_patch_size = mean(sizes),
-    max_patch_size = max(sizes),
-    total_natural_ha = sum(sizes),
-    mean_dist_semi_natural_km = mean(terra::values(dist), na.rm = TRUE) / 1000,
-    fragmentation_index = length(sizes) / sum(sizes)
+  landcover <- env_rasters[[lc_idx]]
+
+  if (terra::is.bool(landcover)) {
+    landcover <- as.numeric(landcover)
+  }
+
+  habitat <- landcover > 0.1
+  habitat_int <- as.numeric(habitat)
+
+  patches <- terra::patches(habitat_int, directions = 8, zeroAsNA = TRUE)
+  patch_sizes <- terra::freq(patches)
+  patch_sizes <- patch_sizes[patch_sizes$value > 0, ]
+
+  if (nrow(patch_sizes) == 0) {
+    return(list(
+      n_patches = 0,
+      mean_patch_size = NA,
+      max_patch_size = NA,
+      total_habitat_area = 0,
+      distance_to_habitat = NA
+    ))
+  }
+
+  cell_area <- terra::cellSize(patches, unit = "km")[[1]][1] * 100
+
+  mean_patch_size <- mean(patch_sizes$count) * cell_area
+  max_patch_size <- max(patch_sizes$count) * cell_area
+  total_habitat_area <- sum(patch_sizes$count) * cell_area
+
+  dist_to_habitat <- terra::gridDist(habitat_int, target = 1)
+
+  list(
+    n_patches = nrow(patch_sizes),
+    mean_patch_size = mean_patch_size,
+    max_patch_size = max_patch_size,
+    total_habitat_area = total_habitat_area,
+    distance_to_habitat = dist_to_habitat,
+    patches_raster = patches
   )
 }

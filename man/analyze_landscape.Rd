@@ -2,16 +2,16 @@
 % Please edit documentation in R/analyze_landscape.R
 \name{analyze_landscape}
 \alias{analyze_landscape}
-\title{Analyze landscape metrics}
+\title{Analyze landscape}
 \usage{
-analyze_landscape(rasters)
+analyze_landscape(env_rasters)
 }
 \arguments{
-\item{rasters}{SpatRaster with landcover layer}
+\item{env_rasters}{SpatRaster stack environnemental}
 }
 \value{
-data.frame
+list de métriques paysagères
 }
 \description{
-Analyze landscape metrics
+Analyse la fragmentation des habitats et les métriques paysagères.
 }
