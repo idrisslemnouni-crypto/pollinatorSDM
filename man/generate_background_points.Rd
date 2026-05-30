@@ -4,16 +4,29 @@
 \alias{generate_background_points}
 \title{Generate background points}
 \usage{
-generate_background_points(rasters, n = 1000)
+generate_background_points(
+  env_rasters,
+  presence_sf,
+  n_points = 1000,
+  buffer_km = 5,
+  min_dist_km = 10
+)
 }
 \arguments{
-\item{rasters}{SpatRaster}
+\item{env_rasters}{SpatRaster}
 
-\item{n}{Integer, number of points}
+\item{presence_sf}{sf object des présences}
+
+\item{n_points}{integer, nombre de points (défaut 1000)}
+
+\item{buffer_km}{numeric, buffer d'exclusion autour des présences en km (défaut 5)}
+
+\item{min_dist_km}{numeric, distance minimum entre background points en km (défaut 10)}
 }
 \value{
-data.frame
+sf object
 }
 \description{
-Generate background points
+Génère des pseudo-absences aléatoires en excluant un buffer autour des points
+de présence, avec contrôle spatial (distance minimum entre background points).
 }

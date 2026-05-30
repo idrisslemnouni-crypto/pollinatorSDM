@@ -4,14 +4,17 @@
 \alias{clean_occurrences}
 \title{Clean occurrence data}
 \usage{
-clean_occurrences(occurrences)
+clean_occurrences(data, env_rasters)
 }
 \arguments{
-\item{occurrences}{data.frame}
+\item{data}{data.frame avec colonnes decimalLongitude, decimalLatitude, species}
+
+\item{env_rasters}{SpatRaster pour masque terrestre et rarefaction}
 }
 \value{
-list with cleaned data and report
+list(data = sf object, report = data.frame)
 }
 \description{
-Clean occurrence data
+Nettoie les données d'occurrence : supprime doublons, coordonnées nulles,
+points marins (hors terre), rarefaction spatiale, et outliers géographiques.
 }

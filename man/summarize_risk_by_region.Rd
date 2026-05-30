@@ -2,18 +2,20 @@
 % Please edit documentation in R/summarize_risk_by_region.R
 \name{summarize_risk_by_region}
 \alias{summarize_risk_by_region}
-\title{Summarize pollination deficit by region}
+\title{Summarize risk by region}
 \usage{
-summarize_risk_by_region(deficit_raster, regions = NULL)
+summarize_risk_by_region(deficit_raster, crop_map, grid_size = 1)
 }
 \arguments{
-\item{deficit_raster}{SpatRaster}
+\item{deficit_raster}{SpatRaster du déficit}
 
-\item{regions}{sf object}
+\item{crop_map}{sf object des cultures avec area_ha}
+
+\item{grid_size}{numeric, taille de la grille en degrés (défaut 1)}
 }
 \value{
-data.frame
+data.frame avec statistiques par région
 }
 \description{
-Summarize pollination deficit by region
+Agrège le déficit de pollinisation par région géographique (grille régulière).
 }

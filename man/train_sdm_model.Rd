@@ -2,20 +2,20 @@
 % Please edit documentation in R/train_sdm_model.R
 \name{train_sdm_model}
 \alias{train_sdm_model}
-\title{Train Species Distribution Model}
+\title{Train SDM model}
 \usage{
-train_sdm_model(presence_data, background_data, method = "rf")
+train_sdm_model(predictor_data, method = "rf", ntree = 500)
 }
 \arguments{
-\item{presence_data}{data.frame}
+\item{predictor_data}{data.frame avec variables prédicteurs et occurrence}
 
-\item{background_data}{data.frame}
+\item{method}{character, "rf" uniquement supporté}
 
-\item{method}{Character}
+\item{ntree}{integer, nombre d'arbres}
 }
 \value{
-list with model, train_data, test_data
+modèle randomForest
 }
 \description{
-Train Species Distribution Model
+Entraîne un modèle RandomForest avec présences et background points.
 }

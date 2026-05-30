@@ -7,13 +7,13 @@
 evaluate_models(model, test_data)
 }
 \arguments{
-\item{model}{Fitted model}
+\item{model}{modèle entraîné (randomForest)}
 
-\item{test_data}{Test dataset}
+\item{test_data}{data.frame de test avec occurrence et prédicteurs}
 }
 \value{
-list with metrics, roc_plot, obs_pred_plot
+list(metrics = data.frame, roc_plot = ggplot)
 }
 \description{
-Evaluate SDM models
+Calcule AUC, Accuracy, Sensibilité, Spécificité, et génère la courbe ROC.
 }

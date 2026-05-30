@@ -1,28 +1,30 @@
-#' Train Species Distribution Model
-#' @param presence_data data.frame
-#' @param background_data data.frame
-#' @param method Character
-#' @return list with model, train_data, test_data
+#' Train SDM model
+#'
+#' Entraîne un modèle RandomForest avec présences et background points.
+#'
+#' @param predictor_data data.frame avec variables prédicteurs et occurrence
+#' @param method character, "rf" uniquement supporté
+#' @param ntree integer, nombre d'arbres
+#' @return modèle randomForest
 #' @export
-train_sdm_model <- function(presence_data, background_data, method = "rf") {
-  presence_data <- as.data.frame(presence_data)
-  background_data <- as.data.frame(background_data)
-  presence_data <- presence_data[, !sapply(presence_data, is.character)]
-  background_data <- background_data[, !sapply(background_data, is.character)]
-  presence_data <- presence_data[, !sapply(presence_data, function(x) is.list(x) || inherits(x, "sfc"))]
-  background_data <- background_data[, !sapply(background_data, function(x) is.list(x) || inherits(x, "sfc"))]
-  presence_data$presence <- 1
-  background_data$presence <- 0
-  common_cols <- intersect(names(presence_data), names(background_data))
-  combined <- rbind(presence_data[, common_cols], background_data[, common_cols])
-  combined <- na.omit(combined)
-  combined$presence <- factor(combined$presence)
+train_sdm_model <- function(predictor_data, method = "rf", ntree = 500) {
+  if (!"occurrence" %in% names(predictor_data)) {
+    stop("Column 'occurrence' required in predictor_data")
+  }
 
-  set.seed(42)
-  train_idx <- sample(1:nrow(combined), 0.8 * nrow(combined))
-  train_data <- combined[train_idx, ]
-  test_data <- combined[-train_idx, ]
+  # occurrence doit être factor pour classification
+  predictor_data$occurrence <- as.factor(predictor_data$occurrence)
 
-  model <- caret::train(presence ~ ., data = train_data, method = method, trControl = caret::trainControl(method = "cv", number = 5))
-  list(model = model, train_data = train_data, test_data = test_data)
+  if (method == "rf") {
+    model <- randomForest::randomForest(
+      occurrence ~ .,
+      data = predictor_data,
+      ntree = ntree,
+      importance = TRUE
+    )
+  } else {
+    stop("Only 'rf' method is currently supported.")
+  }
+
+  model
 }

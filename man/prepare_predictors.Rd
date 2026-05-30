@@ -2,18 +2,21 @@
 % Please edit documentation in R/prepare_predictors.R
 \name{prepare_predictors}
 \alias{prepare_predictors}
-\title{Prepare environmental predictors}
+\title{Prepare predictors for SDM}
 \usage{
-prepare_predictors(occurrences, rasters)
+prepare_predictors(occurrence_sf, background_sf, env_rasters)
 }
 \arguments{
-\item{occurrences}{data.frame or sf or list}
+\item{occurrence_sf}{sf object d'occurrences (présence)}
 
-\item{rasters}{SpatRaster}
+\item{background_sf}{sf object de pseudo-absences}
+
+\item{env_rasters}{SpatRaster stack}
 }
 \value{
-data.frame
+data.frame prêt pour SDM
 }
 \description{
-Prepare environmental predictors
+Extrait les valeurs raster, supprime variables corrélées (Pearson > 0.8),
+calcule VIF simple, et retourne dataset prêt.
 }
