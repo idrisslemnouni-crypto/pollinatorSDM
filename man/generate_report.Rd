@@ -2,16 +2,33 @@
 % Please edit documentation in R/generate_report.R
 \name{generate_report}
 \alias{generate_report}
-\title{Generate HTML report}
+\title{Generate automatic report}
 \usage{
-generate_report(output_file = "pollinator_report.html")
+generate_report(
+  pollinator_data,
+  model,
+  prediction_raster,
+  pollination_deficit,
+  recommendations,
+  output_file = "pollinator_report.html"
+)
 }
 \arguments{
-\item{output_file}{Character}
+\item{pollinator_data}{données d'occurrences nettoyées}
+
+\item{model}{modèle entraîné}
+
+\item{prediction_raster}{raster de prédiction}
+
+\item{pollination_deficit}{raster déficit de pollinisation}
+
+\item{recommendations}{data.frame de recommandations}
+
+\item{output_file}{nom ou chemin du fichier HTML de sortie}
 }
 \value{
-Path to report
+chemin du fichier généré
 }
 \description{
-Generate HTML report
+Génère un rapport HTML de synthèse du workflow pollinatorSDM.
 }
