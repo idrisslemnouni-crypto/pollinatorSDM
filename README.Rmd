@@ -1,6 +1,7 @@
 ---
 output: github_document
 ---
+![Carte de probabilité de présence du pollinisateur](man/figures/pred_prob_suitability.png)
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->

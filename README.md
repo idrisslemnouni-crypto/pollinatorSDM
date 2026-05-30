@@ -1,5 +1,9 @@
 
-# pollinatorSDM
+![Carte de probabilité de présence du
+pollinisateur](man/figures/pred_prob_suitability.png)
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end --> \# pollinatorSDM
 
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
