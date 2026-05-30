@@ -1,3 +1,6 @@
 .Rproj.user
 inst/doc
 .positai
+test_report.html
+test_report.pdf
+test_report.docx
