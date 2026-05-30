@@ -2,21 +2,24 @@
 % Please edit documentation in R/generate_recommendations.R
 \name{generate_recommendations}
 \alias{generate_recommendations}
-\title{Generate recommendations}
+\title{Generate management recommendations}
 \usage{
-generate_recommendations(prediction_raster, deficit_raster, landscape)
+generate_recommendations(
+  suitability_raster,
+  deficit_raster,
+  landscape_analysis
+)
 }
 \arguments{
-\item{prediction_raster}{SpatRaster, suitability des pollinisateurs}
+\item{suitability_raster}{SpatRaster de suitability pollinisateurs}
 
-\item{deficit_raster}{SpatRaster, déficit de pollinisation}
+\item{deficit_raster}{SpatRaster du déficit}
 
-\item{landscape}{list, résultats de analyze_landscape()}
+\item{landscape_analysis}{list de analyze_landscape()}
 }
 \value{
-data.frame de recommandations
+data.frame des recommandations
 }
 \description{
-Génère des recommandations agroécologiques basées sur la suitability,
-le déficit de pollinisation et la fragmentation des habitats.
+Génère recommandations basées sur déficit de pollinisation et paysage.
 }
