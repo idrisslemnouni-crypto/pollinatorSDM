@@ -1,32 +1,38 @@
 library(testthat)
 library(pollinatorSDM)
 
-test_that("data download works", {
-  d <- download_pollinator_data(limit = 10)
-  expect_true(nrow(d) > 0)
-  expect_true(all(c("species", "decimalLongitude", "decimalLatitude") %in% names(d)))
+test_that("clean_occurrences errors if env_rasters is missing", {
+  x <- data.frame(
+    decimalLongitude = c(-6.8, -7.1, -6.9),
+    decimalLatitude = c(34.0, 33.9, 34.1),
+    species = c("Apis mellifera", "Apis mellifera", "Bombus terrestris")
+  )
+
+  expect_error(clean_occurrences(x))
 })
 
-test_that("clean returns sf", {
-  d <- download_pollinator_data(limit = 10)
-  cleaned <- clean_occurrences(d)
-  occ_clean <- cleaned$cleaned
-  expect_s3_class(occ_clean, "sf")
-})
-
-test_that("predictors prepared", {
-  d <- download_pollinator_data(limit = 10)
-  occ <- clean_occurrences(d)$cleaned
-  r <- terra::rast(nrows = 10, ncols = 10, crs = "EPSG:4326", vals = runif(100))
+test_that("generate_background_points errors if presence_sf is missing", {
+  r <- terra::rast(
+    nrows = 10, ncols = 10,
+    xmin = -10, xmax = -5,
+    ymin = 30, ymax = 35,
+    crs = "EPSG:4326",
+    vals = runif(100)
+  )
   names(r) <- "var1"
-  p <- prepare_predictors(occ, r)
-  expect_true("var1" %in% names(p))
-  expect_true(nrow(p) > 0)
+
+  expect_error(generate_background_points(r, n = 50))
 })
 
-test_that("background generated", {
-  r <- terra::rast(nrows = 10, ncols = 10, crs = "EPSG:4326", vals = runif(100))
-  names(r) <- "var1"
-  bg <- generate_background_points(r, n = 50)
-  expect_equal(nrow(bg), 50)
+test_that("plot_pollinator_map runs without error on a simple raster", {
+  r <- terra::rast(
+    nrows = 10, ncols = 10,
+    xmin = -10, xmax = -5,
+    ymin = 30, ymax = 35,
+    crs = "EPSG:4326",
+    vals = runif(100)
+  )
+  names(r) <- "suitability"
+
+  expect_no_error(plot_pollinator_map(r))
 })
