@@ -1,8 +1,8 @@
 ---
-title: "pollinatorSDM - Guide d'utilisation avance"
+title: "pollinatorSDM – Guide d'utilisation"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{pollinatorSDM - Guide d'utilisation avance}
+  %\VignetteIndexEntry{pollinatorSDM – Guide d'utilisation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -10,99 +10,157 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = FALSE
 )
 ```
 
 ## Introduction
 
-Ce package modélise la distribution de pollinisateurs au Maroc avec des données réelles (GBIF, WorldClim, landcover ESA), analyse les habitats favorables, et évalue le déficit de pollinisation pour les cultures dépendantes.
+Le package `pollinatorSDM` propose un flux de travail pour la modélisation
+de la distribution des pollinisateurs et l'évaluation du déficit de
+pollinisation dans les paysages agricoles.
 
-## Chargement des données réelles
+Il permet de :
+
+- télécharger des données d'occurrence de pollinisateurs,
+- nettoyer les observations spatiales,
+- préparer des variables environnementales,
+- entraîner des modèles SDM,
+- prédire des cartes de suitabilité,
+- calculer un indice de pollinisation et un déficit,
+- produire des cartes et des rapports automatiques.
+
+Cette vignette présente le **workflow général** du package sous forme
+d'exemple reproductible et léger.
+
+## Chargement du package
 
 ```{r}
 library(pollinatorSDM)
+library(terra)
+library(sf)
+library(ggplot2)
+```
 
-# Données pollinisateurs : GBIF réel pour le Maroc
-poll_data <- download_pollinator_data()
-head(poll_data)
+## Télécharger les données d'occurrence
 
-# Couches environnementales : WorldClim + ESA WorldCover
+```{r}
+occ <- download_pollinator_data()
+head(occ)
+```
+
+## Nettoyer les occurrences
+
+```{r}
+occ_clean_list <- clean_occurrences(occ)
+occ_clean <- occ_clean_list$cleaned
+
+head(occ_clean)
+```
+
+## Télécharger les couches environnementales
+
+```{r}
 env <- download_environmental_layers()
-names(env)
+env
 ```
 
-## Modélisation SDM avec RandomForest
+## Préparer les prédicteurs
 
 ```{r}
-# Extraire prédicteurs aux points d'occurrence
-occ_spat <- terra::vect(poll_data[, c("decimalLongitude", "decimalLatitude")], crs = "EPSG:4326")
-occ_extract <- terra::extract(env, occ_spat, df = TRUE, ID = FALSE)
-occ_extract <- occ_extract[complete.cases(occ_extract), ]
-occ_extract$presence <- as.factor("1")
-
-# Background points aléatoires
-set.seed(123)
-bg_spat <- terra::spatSample(env[], size = 1000, method = "random", xy = TRUE, values = FALSE)[1]
-bg_coords <- terra::vect(bg_spat, crs = terra::crs(env))
-bg_extract <- terra::extract(env, bg_coords, df = TRUE, ID = FALSE)
-bg_extract <- bg_extract[complete.cases(bg_extract), ]
-bg_extract$presence <- as.factor("0")
-
-# Entraînement RandomForest
-combined <- rbind(occ_extract, bg_extract)
-model <- randomForest::randomForest(presence ~ ., data = combined, ntree = 500)
-
-# Prédiction raster
-pred <- terra::predict(env, model, type = "prob")[][2]
-names(pred) <- "suitability"
-terra::plot(pred, main = "Pollinator Suitability")
+pred_data <- prepare_predictors(occ_clean, env)
+head(pred_data)
 ```
 
-## Carte des cultures et calcul de la demande
+## Générer des points de fond
 
 ```{r}
-# Données cultures
-crop_dep <- import_crop_data()
-crop_map <- import_crop_map("data-raw/crop_map.gpkg")
-crop_map <- merge(crop_map, crop_dep, by.x = "crop_type", by.y = "crop_name", all.x = TRUE)
-crop_map$area_ha <- as.numeric(sf::st_area(crop_map)) / 10000
-
-# Rasteriser la demande agricole
-crop_vect <- terra::vect(crop_map)
-crop_demand <- terra::rasterize(crop_vect, pred, field = "dependence_pollination", fun = "mean", background = 0)
-crop_area <- terra::rasterize(crop_vect, pred, field = "area_ha", fun = "sum", background = 0)
-agri_demand <- crop_demand * crop_area
+bg <- generate_background_points(env, n = 500)
+head(bg)
 ```
 
-## Indice de pollinisation et déficit
+## Entraîner un modèle SDM
 
 ```{r}
-pollination_index <- calculate_pollination_index(pred, agri_demand)
-deficit <- calculate_pollination_deficit(pred, pollination_index)
-
-terra::plot(pollination_index, main = "Pollination Index")
-terra::plot(deficit, main = "Pollination Deficit")
+model_obj <- train_sdm_model(pred_data, bg)
+model_obj
 ```
 
-## Analyse paysagère et recommandations
+## Évaluer le modèle
 
 ```{r}
-landscape <- analyze_landscape(env)
-terra::plot(landscape$patches_raster, main = "Habitat Patches")
-
-recommendations <- generate_recommendations(pred, deficit, landscape)
-recommendations
+eval_res <- evaluate_models(model_obj)
+eval_res
 ```
 
-## Rapport automatique
+## Prédire la distribution des pollinisateurs
 
-```{r, eval = FALSE}
-generate_report(
-  pollinator_data = poll_data,
-  model = model,
-  prediction_raster = pred,
+```{r}
+pred_raster <- predict_pollinator_distribution(model_obj$model, env)
+pred_raster
+```
+
+## Visualiser la carte de suitabilité
+
+```{r}
+plot_pollinator_map(pred_raster)
+```
+
+## Calculer l'indice de pollinisation
+
+```{r}
+pollination_index <- calculate_pollination_index(pred_raster, env)
+pollination_index
+```
+
+## Calculer le déficit de pollinisation
+
+```{r}
+deficit <- calculate_pollination_deficit(pred_raster, pollination_index)
+deficit
+```
+
+## Visualiser le déficit
+
+```{r}
+plot_pollination_deficit(deficit)
+```
+
+## Analyse paysagère
+
+```{r}
+landscape_stats <- analyze_landscape(env)
+landscape_stats
+```
+
+## Générer des recommandations
+
+```{r}
+reco <- generate_recommendations(
+  prediction_raster = pred_raster,
   pollination_deficit = deficit,
-  recommendations = recommendations
+  landscape = landscape_stats
+)
+
+reco
+```
+
+## Générer un rapport automatique
+
+```{r}
+generate_report(
+  pollinator_data = occ_clean,
+  model = model_obj$model,
+  prediction_raster = pred_raster,
+  pollination_deficit = deficit,
+  recommendations = reco,
+  output_file = "pollinator_report.html"
 )
 ```
+
+## Conclusion
+
+Le package `pollinatorSDM` fournit une base cohérente pour combiner
+données biologiques, variables environnementales, modélisation spatiale
+et analyse du déficit de pollinisation dans un cadre reproductible.
