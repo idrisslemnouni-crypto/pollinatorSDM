@@ -1,93 +1,127 @@
 
-![Carte de probabilité de présence du
-pollinisateur](man/figures/pred_prob_suitability.png)
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml)
-<!-- badges: end --> \# pollinatorSDM
 
+[![R-CMD-check](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
 
-## Description
+# pollinatorSDM
 
-`pollinatorSDM` est un package R complet pour la modélisation de la
-distribution des pollinisateurs et l’évaluation des services de
-pollinisation. Il combine données d’occurrence, modèles de distribution
-d’espèces (SDM), analyse paysagère et cartographie du déficit de
-pollinisation pour l’agroécologie.
+`pollinatorSDM` is an R package for modelling pollinator distribution
+and assessing pollination deficit in agricultural landscapes. It
+provides functions for downloading and cleaning occurrence data,
+preparing environmental predictors, training species distribution
+models, producing suitability maps, estimating pollination indices, and
+generating reports.
+
+<figure>
+<img src="man/figures/pred_prob_suitability.png"
+alt="Predicted pollinator suitability map" />
+<figcaption aria-hidden="true">Predicted pollinator suitability
+map</figcaption>
+</figure>
+
+## Overview
+
+The package was developed as an academic project on pollinator
+distribution modelling and ecosystem service assessment. It aims to
+support a reproducible workflow for:
+
+- downloading pollinator occurrence data,
+- cleaning spatial records,
+- preparing environmental raster predictors,
+- generating background points,
+- training and evaluating SDM models,
+- predicting pollinator suitability,
+- estimating pollination deficit,
+- creating maps and reports.
 
 ## Installation
 
 ``` r
-# Installer depuis GitHub
+# install.packages("devtools")
 devtools::install_github("idrisslemnouni-crypto/pollinatorSDM")
 ```
 
-## Utilisation
+## Main functions
+
+### Data acquisition
+
+- `download_pollinator_data()`
+- `download_environmental_layers()`
+- `import_crop_data()`
+- `import_crop_map()`
+
+### Data preparation
+
+- `clean_occurrences()`
+- `prepare_predictors()`
+- `generate_background_points()`
+
+### Modelling and prediction
+
+- `train_sdm_model()`
+- `evaluate_models()`
+- `predict_pollinator_distribution()`
+
+### Pollination analysis
+
+- `calculate_pollination_index()`
+- `calculate_pollination_deficit()`
+- `analyze_landscape()`
+- `summarize_risk_by_region()`
+
+### Visualisation and reporting
+
+- `plot_pollinator_map()`
+- `plot_pollination_deficit()`
+- `generate_recommendations()`
+- `generate_report()`
+
+## Example workflow
 
 ``` r
 library(pollinatorSDM)
 
-# Télécharger des occurrences
+# Download occurrence data
 occ <- download_pollinator_data(limit = 50)
 
-# Nettoyer
-occ_clean <- clean_occurrences(occ)$cleaned
+# Clean spatial records
+occ_clean <- clean_occurrences(occ)
 
-# Variables environnementales
+# Download environmental layers
 env <- download_environmental_layers()
 
-# Prédicteurs
-preds <- prepare_predictors(occ_clean, env)
+# Prepare predictors for SDM
+pred_data <- prepare_predictors(occ_clean, env)
 
-# Points de fond
+# Generate background points
 bg <- generate_background_points(env, n = 1000)
-bg$presence <- 0
 
-# Modèle SDM
-model_obj <- train_sdm_model(preds, bg)
-model <- model_obj$model
+# Train SDM model
+model_obj <- train_sdm_model(pred_data, bg)
 
-# Prédiction
-pred <- predict_pollinator_distribution(model, env)
+# Predict suitability
+pred_raster <- predict_pollinator_distribution(model_obj$model, env)
 
-# Carte
-plot_pollinator_map(pred)
+# Plot map
+plot_pollinator_map(pred_raster)
 ```
 
-<figure>
-<img src="README-example.png"
-alt="Carte de suitabilité des pollinisateurs" />
-<figcaption aria-hidden="true">Carte de suitabilité des
-pollinisateurs</figcaption>
-</figure>
+The package also includes functions for pollination deficit mapping and
+automatic report generation.
 
-## Cultures dépendantes de la pollinisation
+## Project context
 
-``` r
-# Données agricoles
-crops <- import_crop_data()
-crops
+This package focuses on pollinators and pollination services in
+agroecological systems. It combines species distribution modelling,
+spatial analysis, and agricultural data to help identify suitable
+habitats, vulnerable crop areas, and zones with potential pollination
+deficit.
 
-# Indice de pollinisation
-pollination_index <- calculate_pollination_index(pred, env)
-```
+## Author
 
-## Fonctions principales
-
-- **Acquisition** : `download_pollinator_data()`,
-  `download_environmental_layers()`, `import_crop_data()`
-- **Nettoyage** : `clean_occurrences()`, `prepare_predictors()`,
-  `generate_background_points()`
-- **Modélisation** : `train_sdm_model()`, `evaluate_models()`,
-  `predict_pollinator_distribution()`
-- **Analyse** : `calculate_pollination_index()`,
-  `calculate_pollination_deficit()`, `analyze_landscape()`,
-  `summarize_risk_by_region()`
-- **Visualisation** : `plot_pollinator_map()`,
-  `plot_pollination_deficit()`
-- **Rapport** : `generate_recommendations()`, `generate_report()`
-
-## Auteur
-
-Idriss Lemnouni — Étudiant ingénieur, IAV Hassan II
+Idriss Lemnouni  
+Engineering student in Data Science Applied to Agriculture  
+Institut Agronomique et Vétérinaire Hassan II
