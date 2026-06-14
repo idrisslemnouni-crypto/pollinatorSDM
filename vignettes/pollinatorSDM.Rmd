@@ -9,25 +9,31 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 6,
+  fig.height = 5,
+  warning    = FALSE,
+  message    = FALSE
 )
+set.seed(42)
 ```
 
 ## Introduction
 
-Le package `pollinatorSDM` propose un flux de travail complet pour la modélisation
-de la distribution des pollinisateurs et l'évaluation du déficit de
+Le package `pollinatorSDM` propose un flux de travail complet pour la
+modélisation de la distribution des pollinisateurs et l'évaluation du déficit de
 pollinisation dans les paysages agricoles.
 
 Il permet de :
 
-- télécharger et nettoyer des données d'occurrence de pollinisateurs,
-- préparer des variables environnementales raster,
-- entraîner des modèles de distribution d'espèces (SDM) avec Random Forest,
-- prédire des cartes de suitabilité d'habitat,
-- calculer un indice et un déficit de pollinisation,
-- produire des cartes et des rapports HTML automatiques.
+- Télécharger et nettoyer des données d'occurrence de pollinisateurs (GBIF).
+- Préparer des variables environnementales raster (WorldClim, ESA Land Cover).
+- Entraîner des modèles de distribution d'espèces (SDM) avec Random Forest ou GLM.
+- Prédire des cartes de suitabilité d'habitat.
+- Calculer un indice et un déficit de pollinisation (3 classes : faible/modéré/élevé).
+- Analyser la fragmentation paysagère.
+- Produire des cartes et des rapports HTML automatiques.
 
 ## Chargement du package
 
@@ -43,54 +49,46 @@ library(ggplot2)
 Le package inclut deux jeux de données prêts à l'emploi :
 
 ```{r data-example}
-# Occurrences de pollinisateurs
 data(pollinator_occurrences)
 head(pollinator_occurrences)
 
-# Dépendances des cultures à la pollinisation
 data(crop_dependencies)
 print(crop_dependencies)
 ```
 
-## Simulation d'un workflow reproductible
+## Workflow reproductible avec données synthétiques
 
 Cette section illustre le pipeline complet avec des données synthétiques
 légères, garantissant que la vignette s'exécute sans connexion Internet
 ni téléchargement.
 
-### 1. Préparer des données d'occurrence
+### 1. Données d'occurrence
 
 ```{r occ-prep}
-# Utilisation des données intégrées
 occ <- pollinator_occurrences
 cat("Nombre d'occurrences :", nrow(occ), "\n")
 cat("Espèces :", paste(unique(occ$species), collapse = ", "), "\n")
 ```
 
-### 2. Créer un raster environnemental synthétique
+### 2. Raster environnemental synthétique
 
 ```{r env-raster}
-set.seed(42)
-
-# Raster simulant une région d'étude (Maroc central)
 env <- terra::rast(
   nrows = 30, ncols = 30,
-  xmin = -9, xmax = -4,
-  ymin = 31, ymax = 36,
-  crs = "EPSG:4326"
+  xmin  = -9, xmax = -4,
+  ymin  = 31, ymax = 36,
+  crs   = "EPSG:4326"
 )
-
-# Trois variables environnementales simulées
 terra::values(env) <- cbind(
-  bio1  = rnorm(900, mean = 18, sd = 4),   # Température moyenne
-  bio12 = rnorm(900, mean = 350, sd = 80), # Précipitations annuelles
-  ndvi  = runif(900, min = 0.1, max = 0.8) # NDVI
+  bio1  = rnorm(900, mean = 18, sd = 4),
+  bio12 = rnorm(900, mean = 350, sd = 80),
+  ndvi  = runif(900, min = 0.1, max = 0.8)
 )
 names(env) <- c("bio1", "bio12", "ndvi")
 print(env)
 ```
 
-### 3. Nettoyer les occurrences
+### 3. Nettoyage des occurrences
 
 ```{r clean}
 occ_clean <- clean_occurrences(occ, env)
@@ -99,140 +97,180 @@ print(occ_clean$report)
 cat("Points retenus :", nrow(occ_clean$data), "\n")
 ```
 
-### 4. Préparer les prédicteurs
+### 4. Génération des pseudo-absences
 
-```{r predictors}
-pred_data <- prepare_predictors(occ_clean$data, env)
-cat("Dimensions du dataset SDM :", nrow(pred_data), "lignes x", ncol(pred_data), "colonnes\n")
+```{r background}
+bg <- generate_background_points(
+  env_rasters  = env,
+  presence_sf  = occ_clean$data,
+  n_points     = 100
+)
+cat("Pseudo-absences générées :", nrow(bg), "\n")
+```
+
+### 5. Préparation du dataset d'entraînement
+
+```{r train-data}
+pred_data <- prepare_predictors(occ_clean$data, bg, env)
+cat("Dataset SDM :", nrow(pred_data), "lignes x",
+    ncol(pred_data), "colonnes\n")
+cat("Présences :", sum(pred_data$occurrence == 1),
+    "| Absences :", sum(pred_data$occurrence == 0), "\n")
 head(pred_data)
 ```
 
-### 5. Générer des points de fond (pseudo-absences)
+### 6. Entraînement du modèle SDM – Random Forest
 
-```{r background}
-bg <- generate_background_points(env, presence_sf = occ_clean$data, n_points = 100)
-cat("Nombre de background points :", nrow(bg), "\n")
+```{r train-rf}
+train_df              <- pred_data
+train_df$occurrence   <- as.factor(train_df$occurrence)
+
+model_rf <- train_sdm_model(train_df, method = "rf", ntree = 100)
+print(model_rf)
 ```
 
-### 6. Préparer le dataset d'entraînement
+### 7. Entraînement du modèle SDM – GLM (régression logistique)
 
-```{r train-data}
-# Extraire les valeurs raster pour les background points
-bg_coords <- sf::st_coordinates(bg)
-bg_vals <- terra::extract(env, bg_coords)
-bg_df <- cbind(occurrence = 0, bg_vals)
+```{r train-glm}
+train_df_glm            <- pred_data
+train_df_glm$occurrence <- as.numeric(train_df_glm$occurrence)
 
-# Combiner présences et absences
-train_df <- rbind(pred_data, bg_df)
-train_df <- train_df[complete.cases(train_df), ]
-train_df$occurrence <- as.factor(train_df$occurrence)
-cat("Présences :", sum(train_df$occurrence == "1"), "| Absences :", sum(train_df$occurrence == "0"), "\n")
+model_glm <- train_sdm_model(train_df_glm, method = "glm")
+summary(model_glm)
 ```
 
-### 7. Entraîner le modèle SDM
+### 8. Évaluation des modèles
 
-```{r train-model}
-set.seed(123)
-model <- train_sdm_model(train_df, method = "rf", ntree = 100)
-print(model)
+```{r evaluate}
+# Évaluation Random Forest
+eval_rf <- evaluate_models(model_rf, train_df)
+cat(sprintf("Random Forest — AUC : %.3f | Accuracy : %.3f\n",
+            eval_rf$AUC, eval_rf$Accuracy))
+
+# Évaluation GLM
+eval_glm <- evaluate_models(model_glm, train_df_glm)
+cat(sprintf("GLM           — AUC : %.3f | Accuracy : %.3f\n",
+            eval_glm$AUC, eval_glm$Accuracy))
+
+# Courbe ROC du Random Forest
+print(eval_rf$roc_plot)
 ```
 
-### 8. Prédire la distribution spatiale
+### 9. Prédiction spatiale de la distribution
 
 ```{r predict}
-pred_raster <- predict_pollinator_distribution(model, env)
-cat("Raster de suitabilité :\n")
-print(pred_raster)
-cat("Min :", terra::global(pred_raster, "min", na.rm = TRUE)[[1]], "\n")
-cat("Max :", terra::global(pred_raster, "max", na.rm = TRUE)[[1]], "\n")
+pred_raster <- predict_pollinator_distribution(model_rf, env)
+cat("Suitabilité — Min :",
+    round(terra::global(pred_raster, "min", na.rm = TRUE)[[1]], 3),
+    "| Max :",
+    round(terra::global(pred_raster, "max", na.rm = TRUE)[[1]], 3), "\n")
 ```
 
-### 9. Visualiser la carte de suitabilité
+### 10. Carte de suitabilité
 
-```{r plot-map, fig.width=6, fig.height=5}
-plot_pollinator_map(pred_raster)
+```{r plot-map}
+plot_pollinator_map(pred_raster,
+                    title = "Suitabilité habitat – Maroc (synthétique)")
 ```
 
-### 10. Calculer l'indice et le déficit de pollinisation
+### 11. Indice et déficit de pollinisation
 
 ```{r deficit}
-# Raster simulant la demande agricole
-set.seed(7)
+# Raster de demande agricole synthétique
 crop_demand <- terra::rast(pred_raster)
 terra::values(crop_demand) <- runif(terra::ncell(crop_demand), 0.3, 0.9)
 names(crop_demand) <- "crop_demand"
 
-# Indice de pollinisation
-pollination_idx <- calculate_pollination_index(pred_raster, crop_demand)
+# Calcul de l'indice
+pollination_idx <- calculate_pollination_index(
+  prediction_raster  = pred_raster,
+  crop_demand_raster = crop_demand,
+  normalise          = TRUE
+)
 
-# Déficit de pollinisation
+# Calcul du déficit (2 couches : continu + classes)
 deficit <- calculate_pollination_deficit(pred_raster, pollination_idx)
-cat("Déficit moyen :", round(terra::global(deficit, "mean", na.rm = TRUE)[[1]], 3), "\n")
+
+cat("Couches du raster de déficit :", names(deficit), "\n")
+cat("Déficit moyen :",
+    round(terra::global(deficit[["pollination_deficit"]], "mean", na.rm = TRUE)[[1]], 3), "\n")
 ```
 
-### 11. Visualiser le déficit
+### 12. Carte du déficit de pollinisation
 
-```{r plot-deficit, fig.width=6, fig.height=5}
-plot_pollination_deficit(deficit)
+```{r plot-deficit}
+plot_pollination_deficit(
+  deficit_raster = deficit,
+  title          = "Déficit de pollinisation – Maroc (synthétique)"
+)
 ```
 
-### 12. Analyse paysagère
+### 13. Analyse paysagère
 
 ```{r landscape}
 landscape_stats <- analyze_landscape(env)
-cat("Statistiques paysagères :\n")
-print(landscape_stats)
+cat("Nombre de patches  :", landscape_stats$n_patches, "\n")
+cat("Taille moy. patch  :", round(landscape_stats$mean_patch_size, 2), "ha\n")
+cat("Habitat total      :", round(landscape_stats$total_habitat_area, 1), "ha\n")
 ```
 
-### 13. Générer des recommandations
+### 14. Recommandations de gestion
 
 ```{r recommendations}
 reco <- generate_recommendations(
-  prediction_raster = pred_raster,
-  pollination_deficit = deficit,
-  landscape = landscape_stats
+  suitability_raster = pred_raster,
+  deficit_raster     = deficit,
+  landscape_analysis = landscape_stats
 )
-cat("Recommandations générées :\n")
-for (r in reco) cat(" -", r, "\n")
+print(reco)
 ```
 
 ## Workflow avec données réelles
 
-Pour une application réelle avec données GBIF et WorldClim, le workflow
-suit la même structure en remplaçant les données synthétiques :
+Pour une application réelle avec données GBIF et WorldClim :
 
 ```{r real-workflow, eval=FALSE}
 library(pollinatorSDM)
 
-# 1. Télécharger les occurrences GBIF
-occ <- download_pollinator_data(
-  species = c("Apis mellifera", "Bombus terrestris"),
-  country = "MA",
-  limit = 500
-)
+# 1. Téléchargement des données
+occ <- download_pollinator_data()
+env <- download_environmental_layers()
 
-# 2. Télécharger les couches WorldClim
-env <- download_environmental_layers(res = 10)
+# 2. Nettoyage et préparation
+occ_clean  <- clean_occurrences(occ, env)
+bg         <- generate_background_points(env,
+                presence_sf = occ_clean$data, n_points = 1000)
+pred_data  <- prepare_predictors(occ_clean$data, bg, env)
 
-# 3. Nettoyer les occurrences
-occ_clean <- clean_occurrences(occ, env)
+# 3. Modélisation
+train_df            <- pred_data
+train_df$occurrence <- as.factor(train_df$occurrence)
+model   <- train_sdm_model(train_df, method = "rf", ntree = 500)
+metrics <- evaluate_models(model, train_df)
+cat(sprintf("AUC = %.3f\n", metrics$AUC))
 
-# 4. Préparer les prédicteurs
-pred_data <- prepare_predictors(occ_clean$data, env)
+# 4. Prédiction et analyse
+pred_raster <- predict_pollinator_distribution(model, env)
+crop_map    <- download_crop_map_real(env)
+poll_idx    <- calculate_pollination_index(pred_raster, crop_map)
+deficit     <- calculate_pollination_deficit(pred_raster, poll_idx)
+landscape   <- analyze_landscape(env)
+risk        <- summarize_risk_by_region(deficit[["pollination_deficit"]],
+                                         crop_map)
 
-# 5. Générer pseudo-absences
-bg <- generate_background_points(env, presence_sf = occ_clean$data, n_points = 1000)
+# 5. Visualisation
+plot_pollinator_map(pred_raster)
+plot_pollination_deficit(deficit)
 
-# ... même pipeline que ci-dessus ...
-
-# 14. Générer le rapport complet
+# 6. Rapport final
+reco <- generate_recommendations(pred_raster, deficit, landscape)
 generate_report(
-  pollinator_data = occ_clean$data,
-  model = model,
-  prediction_raster = pred_raster,
-  pollination_deficit = deficit,
-  recommendations = reco,
-  output_file = "pollinator_report.html"
+  pollinator_data     = occ_clean$data,
+  model               = model,
+  prediction_raster   = pred_raster,
+  pollination_deficit = deficit[["pollination_deficit"]],
+  recommendations     = reco,
+  output_file         = "pollinator_report.html"
 )
 ```
 
@@ -240,6 +278,7 @@ generate_report(
 
 Le package `pollinatorSDM` fournit une base cohérente et reproductible pour
 combiner données biologiques, variables environnementales, modélisation SDM
-et analyse du déficit de pollinisation dans un cadre agroécologique.
-Les données d'exemple intégrées permettent de tester toutes les fonctions
-sans dépendance à des sources externes.
+(Random Forest et GLM), et analyse du déficit de pollinisation. Les trois classes
+de déficit (faible, modéré, élevé) permettent une interprétation directe pour
+la gestion agroécologique. Les données d'exemple intégrées permettent de tester
+toutes les fonctions sans dépendance à des sources externes.

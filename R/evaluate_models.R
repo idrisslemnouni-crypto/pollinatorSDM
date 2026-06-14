@@ -1,59 +1,113 @@
 #' Evaluate SDM models
 #'
-#' Calcule AUC, Accuracy, Sensibilité, Spécificité, et génère la courbe ROC.
+#' Computes AUC, Accuracy, Sensitivity, Specificity and generates a ROC curve
+#' for a trained Random Forest or GLM SDM model.
 #'
-#' @param model modèle entraîné (randomForest)
-#' @param test_data data.frame de test avec occurrence et prédicteurs
-#' @return list(metrics = data.frame, roc_plot = ggplot, roc_object = pROC::roc)
+#' @param model A trained model object (\code{randomForest} or \code{glm}).
+#' @param test_data A \code{data.frame} with an \code{occurrence} column
+#'   (factor or numeric 0/1) and predictor columns.
+#' @return A named list with:
+#'   \describe{
+#'     \item{AUC}{Numeric. Area Under the ROC curve (0-1).}
+#'     \item{Accuracy}{Numeric. Overall classification accuracy (0-1).}
+#'     \item{Sensitivity}{Numeric. True positive rate at optimal threshold.}
+#'     \item{Specificity}{Numeric. True negative rate at optimal threshold.}
+#'     \item{Threshold}{Numeric. Optimal decision threshold (Youden index).}
+#'     \item{metrics}{\code{data.frame} summarising all metrics.}
+#'     \item{roc_plot}{A \code{ggplot2} ROC curve.}
+#'     \item{roc_object}{The \code{pROC::roc} object for further analysis.}
+#'   }
+#' @importFrom stats predict
+#' @importFrom ggplot2 ggplot aes geom_line geom_abline labs theme_minimal
 #' @export
+#' @examples
+#' \dontrun{
+#' df <- data.frame(
+#'   occurrence = factor(rep(c(0, 1), each = 25)),
+#'   var1 = c(rnorm(25, 10, 2), rnorm(25, 15, 2)),
+#'   var2 = c(rnorm(25,  5, 1), rnorm(25,  8, 1))
+#' )
+#' model  <- train_sdm_model(df, ntree = 50)
+#' result <- evaluate_models(model, df)
+#' cat("AUC:", result$AUC, "\n")
+#' print(result$roc_plot)
+#' }
 evaluate_models <- function(model, test_data) {
-  pred_prob <- stats::predict(model, test_data, type = "prob")[, "1"]
+  if (!inherits(model, c("randomForest", "glm"))) {
+    stop("'model' must be a randomForest or glm object.")
+  }
+  if (!"occurrence" %in% names(test_data)) {
+    stop("'test_data' must contain an 'occurrence' column.")
+  }
+
   obs <- as.numeric(as.character(test_data$occurrence))
 
-  # ROC et AUC
+  # Predict probabilities
+  if (inherits(model, "randomForest")) {
+    test_data$occurrence <- as.factor(test_data$occurrence)
+    pred_prob <- stats::predict(model, test_data, type = "prob")[, "1"]
+  } else {
+    # GLM
+    test_data$occurrence <- as.numeric(as.character(test_data$occurrence))
+    pred_prob <- stats::predict(model, test_data, type = "response")
+  }
+
+  # ROC curve and AUC
   roc_obj <- pROC::roc(obs, pred_prob, quiet = TRUE)
-  auc_val <- pROC::auc(roc_obj)
+  auc_val <- as.numeric(pROC::auc(roc_obj))
 
-  # Seuil optimal (Youden)
-  optimal <- pROC::coords(roc_obj, "best", ret = c("threshold", "specificity", "sensitivity"))
-  thresh <- optimal$threshold[1]
+  # Optimal threshold (Youden index)
+  optimal  <- pROC::coords(roc_obj, "best",
+                           ret = c("threshold", "specificity", "sensitivity"))
+  thresh   <- optimal$threshold[1]
 
-  # Classification binaire
+  # Binary classification at optimal threshold
   pred_class <- ifelse(pred_prob >= thresh, 1, 0)
 
-  # Matrice de confusion
   tp <- sum(pred_class == 1 & obs == 1)
   tn <- sum(pred_class == 0 & obs == 0)
   fp <- sum(pred_class == 1 & obs == 0)
   fn <- sum(pred_class == 0 & obs == 1)
 
-  accuracy <- (tp + tn) / length(obs)
+  accuracy    <- (tp + tn) / length(obs)
   sensitivity <- if ((tp + fn) > 0) tp / (tp + fn) else NA_real_
   specificity <- if ((tn + fp) > 0) tn / (tn + fp) else NA_real_
 
   metrics <- data.frame(
-    AUC = as.numeric(auc_val),
-    Accuracy = accuracy,
+    AUC         = auc_val,
+    Accuracy    = accuracy,
     Sensitivity = sensitivity,
     Specificity = specificity,
-    Threshold = thresh
+    Threshold   = thresh
   )
 
-  # Plot ROC avec ggplot2
+  # ROC plot
   roc_df <- data.frame(
-    specificity = roc_obj$specificities,
+    fpr         = 1 - roc_obj$specificities,
     sensitivity = roc_obj$sensitivities
   )
-
-  roc_plot <- ggplot2::ggplot(roc_df, ggplot2::aes(x = 1 - specificity, y = sensitivity)) +
+  roc_plot <- ggplot2::ggplot(
+    roc_df,
+    ggplot2::aes(x = fpr, y = sensitivity)
+  ) +
     ggplot2::geom_line(color = "steelblue", linewidth = 1) +
-    ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "grey50") +
+    ggplot2::geom_abline(intercept = 0, slope = 1,
+                         linetype = "dashed", color = "grey50") +
     ggplot2::labs(
-      title = paste("ROC Curve (AUC =", round(as.numeric(auc_val), 3), ")"),
-      x = "1 - Specificity (False Positive Rate)",
-      y = "Sensitivity (True Positive Rate)"
+      title = paste0("ROC Curve  (AUC = ", round(auc_val, 3), ")"),
+      x     = "1 - Specificity  (False Positive Rate)",
+      y     = "Sensitivity  (True Positive Rate)"
     ) +
     ggplot2::theme_minimal(base_size = 12)
 
-  list(metrics = metrics, roc_plot = roc_plot, roc_object = roc_obj)
+  list(
+    AUC         = auc_val,
+    Accuracy    = accuracy,
+    Sensitivity = sensitivity,
+    Specificity = specificity,
+    Threshold   = thresh,
+    metrics     = metrics,
+    roc_plot    = roc_plot,
+    roc_object  = roc_obj
+  )
 }
