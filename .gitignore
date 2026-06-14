@@ -1,5 +1,20 @@
+# R
+.Rproj.user
 .Rhistory
-.Rproj.user/
-test_report.docx
-test_report.html
-test_report.pdf
+.RData
+.Ruserdata
+*.Rproj
+
+# Package build
+*.tar.gz
+*.zip
+inst/doc/
+/doc/
+/Meta/
+
+# knitr/rmarkdown
+vignettes/*.html
+vignettes/*.pdf
+
+# macOS
+.DS_Store

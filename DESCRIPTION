@@ -1,33 +1,40 @@
 Package: pollinatorSDM
-Title: Species Distribution Models for Pollinators and Pollination Deficit
+Title: Distribution des Pollinisateurs et Déficit en Services de Pollinisation
 Version: 0.1.0
 Authors@R: 
-    person("Idriss", "Lemnouni", email = "idriss.lemnouni@iav.ac.ma", role = c("aut", "cre"))
-Description: Models pollinator distribution, analyses suitable habitats,
-    estimates pollination services, and detects pollination deficit zones
-    using species distribution models and landscape analysis.
+    person("Lemnouni", "Idriss", email = "lemnouni.idriss@etudiant.univ.fr",
+           role = c("aut", "cre"))
+Description: Package R permettant de modéliser la distribution de pollinisateurs
+    importants (Apis mellifera, Bombus terrestris, Bombus lapidarius), d'analyser
+    les habitats favorables, d'estimer les services de pollinisation pour les cultures
+    (amandier, pommier, tournesol, colza, tomate), de détecter les zones de déficit
+    de pollinisation, et de produire des cartes et rapports automatiques.
+    Le projet combine données GBIF, données d'occupation du sol, données agricoles,
+    modèles SDM (Random Forest, MaxEnt) et analyse paysagère.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-Depends: 
-    R (>= 4.1)
-Imports: 
-    terra,
-    sf,
-    randomForest,
-    ggplot2,
-    dplyr,
-    rmarkdown,
-    knitr,
-    pROC,
-    stats
+Imports:
+    dplyr (>= 1.1.0),
+    sf (>= 1.0.0),
+    terra (>= 1.7.0),
+    ggplot2 (>= 3.4.0),
+    randomForest (>= 4.7.0),
+    pROC (>= 1.18.0),
+    tidyr (>= 1.3.0),
+    rmarkdown (>= 2.20),
+    knitr (>= 1.42),
+    cli (>= 3.6.0),
+    rlang (>= 1.1.0)
 Suggests:
+    rgbif (>= 3.7.0),
     testthat (>= 3.0.0),
-    rgbif,
-    geodata
-Config/testthat/edition: 3
-LazyData: true
+    covr,
+    withr
 VignetteBuilder: knitr
+Depends: 
+    R (>= 4.1.0)
+LazyData: true
 URL: https://github.com/idrisslemnouni-crypto/pollinatorSDM
 BugReports: https://github.com/idrisslemnouni-crypto/pollinatorSDM/issues
