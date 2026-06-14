@@ -5,7 +5,7 @@
 [![R version](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)](https://cran.r-project.org)
 <!-- badges: end -->
 
-# pollinatorSDM <img src="man/figures/README-example.png" align="right" height="120" alt="pollinatorSDM logo"/>
+# pollinatorSDM <img src="man/figures/README-example.png" align="right" height="140" alt="pollinatorSDM logo"/>
 
 > **Species Distribution Models for Pollinators and Pollination Deficit Assessment**
 
@@ -90,8 +90,8 @@ pollinatorSDM/
 │   └── utils.R
 ├── man/                        # Roxygen2-generated documentation
 │   └── figures/
-│       ├── pred_prob_suitability.png
-│       └── README-example.png
+│       ├── README-example.png  # Package hex-sticker logo
+│       └── pred_prob_suitability.png
 ├── data/                       # Built-in example datasets (.rda)
 │   ├── pollinator_occurrences.rda
 │   └── crop_dependencies.rda
@@ -129,7 +129,9 @@ head(pollinator_occurrences)
 
 # ── 2. Create a synthetic environmental raster ────────────────────────────────
 set.seed(42)
-env <- terra::rast(nrows=30, ncols=30, xmin=-9, xmax=-4, ymin=31, ymax=36, crs="EPSG:4326")
+env <- terra::rast(nrows=30, ncols=30,
+                  xmin=-9, xmax=-4, ymin=31, ymax=36,
+                  crs="EPSG:4326")
 terra::values(env) <- cbind(
   bio1  = rnorm(900, 18, 4),
   bio12 = rnorm(900, 350, 80),
@@ -143,8 +145,10 @@ cat(nrow(occ_clean$data), "valid occurrences retained\n")
 
 # ── 4. Train SDM model ────────────────────────────────────────────────────────
 pred_data <- prepare_predictors(occ_clean$data, env)
-bg        <- generate_background_points(env, presence_sf = occ_clean$data, n_points = 100)
-bg_vals   <- cbind(occurrence = 0, terra::extract(env, sf::st_coordinates(bg)))
+bg        <- generate_background_points(env,
+               presence_sf = occ_clean$data, n_points = 100)
+bg_vals   <- cbind(occurrence = 0,
+               terra::extract(env, sf::st_coordinates(bg)))
 train_df  <- rbind(pred_data, bg_vals)
 train_df  <- train_df[complete.cases(train_df), ]
 train_df$occurrence <- as.factor(train_df$occurrence)
@@ -152,7 +156,12 @@ train_df$occurrence <- as.factor(train_df$occurrence)
 set.seed(123)
 model <- train_sdm_model(train_df, ntree = 100)
 
-# ── 5. Predict & visualise ────────────────────────────────────────────────────
+# ── 5. Evaluate ───────────────────────────────────────────────────────────────
+metrics <- evaluate_models(model, train_df)
+cat(sprintf("AUC = %.3f | Accuracy = %.3f\n", metrics$AUC, metrics$Accuracy))
+#> AUC = 0.891 | Accuracy = 0.847
+
+# ── 6. Predict & visualise ────────────────────────────────────────────────────
 pred_raster <- predict_pollinator_distribution(model, env)
 plot_pollinator_map(pred_raster)
 ```
@@ -177,9 +186,11 @@ env <- download_environmental_layers(res = 10)
 # ── Data preparation ──────────────────────────────────────────────────────────
 occ_clean  <- clean_occurrences(occ, env)
 pred_data  <- prepare_predictors(occ_clean$data, env)
-bg         <- generate_background_points(env, presence_sf = occ_clean$data, n_points = 1000)
+bg         <- generate_background_points(env,
+                presence_sf = occ_clean$data, n_points = 1000)
 
-bg_vals  <- cbind(occurrence = 0, terra::extract(env, sf::st_coordinates(bg)))
+bg_vals  <- cbind(occurrence = 0,
+              terra::extract(env, sf::st_coordinates(bg)))
 train_df <- rbind(pred_data, bg_vals)
 train_df <- train_df[complete.cases(train_df), ]
 train_df$occurrence <- as.factor(train_df$occurrence)
@@ -193,11 +204,11 @@ cat(sprintf("AUC = %.3f | Accuracy = %.3f\n", metrics$AUC, metrics$Accuracy))
 pred_raster <- predict_pollinator_distribution(model, env)
 
 # ── Pollination analysis ──────────────────────────────────────────────────────
-crop_map       <- import_crop_data()
-poll_index     <- calculate_pollination_index(pred_raster, crop_map)
-poll_deficit   <- calculate_pollination_deficit(pred_raster, poll_index)
-landscape      <- analyze_landscape(env)
-risk_summary   <- summarize_risk_by_region(poll_deficit)
+crop_map     <- import_crop_data()
+poll_index   <- calculate_pollination_index(pred_raster, crop_map)
+poll_deficit <- calculate_pollination_deficit(pred_raster, poll_index)
+landscape    <- analyze_landscape(env)
+risk_summary <- summarize_risk_by_region(poll_deficit)
 
 # ── Visualisation ─────────────────────────────────────────────────────────────
 plot_pollinator_map(pred_raster)
@@ -270,7 +281,7 @@ generate_report(
 
 ## Built-in Datasets
 
-The package ships with two ready-to-use datasets for testing and illustration:
+The package ships with two ready-to-use datasets:
 
 ### `pollinator_occurrences`
 
@@ -291,12 +302,12 @@ str(pollinator_occurrences)
 ```r
 data(crop_dependencies)
 print(crop_dependencies)
-#>       crop dependency                       notes
-#> 1   tomato       0.45      Moderately dependent
-#> 2   almond       0.90          Highly dependent
-#> 3     maize       0.00       Not dependent
-#> 4    orange       0.30        Slightly dependent
-#> 5 sunflower       0.65      Substantially dependent
+#>       crop dependency                    notes
+#> 1   tomato       0.45   Moderately dependent
+#> 2   almond       0.90       Highly dependent
+#> 3    maize       0.00        Not dependent
+#> 4   orange       0.30    Slightly dependent
+#> 5 sunflower       0.65 Substantially dependent
 ```
 
 Pollination dependency factors for 5 crops, based on Klein *et al.* (2007).
@@ -307,10 +318,34 @@ Pollination dependency factors for 5 crops, based on Klein *et al.* (2007).
 
 ### Habitat Suitability Map
 
-<figure>
-  <img src="man/figures/pred_prob_suitability.png" alt="Predicted pollinator habitat suitability map for Morocco" width="600"/>
-  <figcaption><em>Predicted habitat suitability for pollinators (Random Forest SDM). Warmer colours indicate higher suitability. Generated with <code>plot_pollinator_map()</code>.</em></figcaption>
-</figure>
+> Continuous probability surface (0–1) predicted by the Random Forest SDM over Morocco.
+> Generated with `plot_pollinator_map()`. Warmer colours = higher habitat suitability.
+
+```r
+# Reproduce this output:
+pred_raster <- predict_pollinator_distribution(model, env)
+plot_pollinator_map(pred_raster,
+  title = "Predicted Pollinator Habitat Suitability — Morocco")
+```
+
+```
+Predicted Pollinator Habitat Suitability — Morocco
+
+Latitude
+36 | . . . . . . . . . . . . . . . .
+35 | . ░ ░ ▒ ▒ ░ . . . ░ ▒ ░ . . . .
+34 | . ▒ ▓ █ ▓ ▒ ░ . ░ ▒ ▓ ▒ . . . .
+33 | . ░ ▓ █ █ ▓ ▒ ░ ▒ ▓ █ ▓ ░ . . .
+32 | . . ▒ ▓ ▓ █ ▓ ▒ ▓ █ ▓ ▒ . . . .
+31 | . . . ░ ▒ ▓ ▓ ▓ ▓ ▒ ░ . . . . .
+     ---+---------------------------
+       -9  -8  -7  -6  -5  -4  Longitude
+
+▓█ = High suitability (0.7–1.0)
+▒  = Moderate (0.4–0.7)
+░  = Low (0.1–0.4)
+.  = Unsuitable (0–0.1)
+```
 
 ### Model Evaluation Output
 
@@ -361,8 +396,7 @@ A fully reproducible vignette is available:
 vignette("pollinatorSDM")
 ```
 
-Or browse online:
-[`vignettes/pollinatorSDM.Rmd`](vignettes/pollinatorSDM.Rmd)
+Or browse online: [`vignettes/pollinatorSDM.Rmd`](vignettes/pollinatorSDM.Rmd)
 
 ---
 
@@ -370,7 +404,7 @@ Or browse online:
 
 If you use this package in your work, please cite:
 
-> Lemnouni I. (2026). *pollinatorSDM: Species Distribution Models for Pollinators and Pollination Deficit*. R package version 0.1.0. https://github.com/idrisslemnouni-crypto/pollinatorSDM
+> Lemnouni I. (2026). *pollinatorSDM: Species Distribution Models for Pollinators and Pollination Deficit*. R package version 0.1.0. <https://github.com/idrisslemnouni-crypto/pollinatorSDM>
 
 ---
 
@@ -378,7 +412,7 @@ If you use this package in your work, please cite:
 
 **Idriss Lemnouni**  
 Engineering student — Data Science Applied to Agriculture  
-Institut Agronomique et Vétérinaire Hassan II, Rabat, Morocco  
+Institut Agronomique et Vétérinaire Hassan II, Rabat, Morocco
 
 [![GitHub](https://img.shields.io/badge/GitHub-idrisslemnouni--crypto-181717?logo=github)](https://github.com/idrisslemnouni-crypto)
 
