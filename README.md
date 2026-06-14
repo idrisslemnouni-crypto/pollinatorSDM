@@ -5,7 +5,7 @@
 [![R version](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)](https://cran.r-project.org)
 <!-- badges: end -->
 
-# pollinatorSDM <img src="pred_prob_suitability.png" align="right" height="160" alt="Pollinator suitability map Morocco"/>
+# pollinatorSDM <img src="man/figures/pred_prob_suitability.png" align="right" height="160" alt="Pollinator suitability map Morocco"/>
 
 > **Species Distribution Models for Pollinators and Pollination Deficit Assessment**
 
@@ -67,7 +67,7 @@ library(pollinatorSDM)
 
 ```
 pollinatorSDM/
-├── R/                          # All R function source files (20 files)
+├── R/                          # All R function source files (21 files)
 │   ├── download_pollinator_data.R
 │   ├── clean_occurrences.R
 │   ├── download_environmental_layers.R
@@ -87,13 +87,15 @@ pollinatorSDM/
 │   ├── import_crop_data.R
 │   ├── import_crop_map.R
 │   ├── data.R                  # Dataset documentation
-│   └── utils.R
-├── man/                        # Roxygen2-generated documentation
+│   └── crop_dependencies.R
+├── man/                        # Roxygen2-generated documentation (20 .Rd files)
+│   └── figures/
+│       └── pred_prob_suitability.png
 ├── data/                       # Built-in example datasets (.rda)
 │   ├── pollinator_occurrences.rda
 │   └── crop_dependencies.rda
 ├── data-raw/                   # Scripts used to generate datasets
-├── tests/testthat/             # Unit tests (testthat 3.0)
+├── tests/testthat/             # Unit tests — 14 tests (testthat 3.0)
 │   └── test-basic.R
 ├── vignettes/
 │   └── pollinatorSDM.Rmd       # Reproducible workflow vignette
@@ -205,7 +207,7 @@ crop_map     <- import_crop_data()
 poll_index   <- calculate_pollination_index(pred_raster, crop_map)
 poll_deficit <- calculate_pollination_deficit(pred_raster, poll_index)
 landscape    <- analyze_landscape(env)
-risk_summary <- summarize_risk_by_region(poll_deficit)
+risk_summary <- summarize_risk_by_region(poll_deficit, crop_map)
 
 # ── Visualisation ─────────────────────────────────────────────────────────────
 plot_pollinator_map(pred_raster)
@@ -263,7 +265,7 @@ generate_report(
 | `calculate_pollination_index()` | Combine suitability × crop demand | `suitability`, `crop_raster` |
 | `calculate_pollination_deficit()` | Compute deficit = demand − supply | `suitability`, `pollination_index` |
 | `analyze_landscape()` | Landscape summary statistics | `rasters` |
-| `summarize_risk_by_region()` | Aggregate deficit by administrative region | `deficit_raster` |
+| `summarize_risk_by_region()` | Aggregate deficit by region + vulnerability score | `deficit_raster`, `crop_map`, `grid_size` |
 
 ### 🗺️ Visualisation & Reporting
 
@@ -311,7 +313,7 @@ print(crop_dependencies)
 
 ### Habitat Suitability Map
 
-![Predicted pollinator habitat suitability map for Morocco](pred_prob_suitability.png)
+![Predicted pollinator habitat suitability map for Morocco](man/figures/pred_prob_suitability.png)
 
 *Predicted habitat suitability for pollinators (Random Forest SDM). Colour scale: viridis (purple = low, yellow = high). Generated with `plot_pollinator_map()`.*
 
