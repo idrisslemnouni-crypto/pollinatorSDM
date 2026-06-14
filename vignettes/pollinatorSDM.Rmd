@@ -9,15 +9,20 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 6,
+  fig.height = 5,
+  warning   = FALSE,
+  message   = FALSE
 )
+set.seed(42)
 ```
 
 ## Introduction
 
-Le package `pollinatorSDM` propose un flux de travail complet pour la modélisation
-de la distribution des pollinisateurs et l'évaluation du déficit de
+Le package `pollinatorSDM` propose un flux de travail complet pour la
+modélisation de la distribution des pollinisateurs et l'évaluation du déficit de
 pollinisation dans les paysages agricoles.
 
 Il permet de :
@@ -43,16 +48,14 @@ library(ggplot2)
 Le package inclut deux jeux de données prêts à l'emploi :
 
 ```{r data-example}
-# Occurrences de pollinisateurs
 data(pollinator_occurrences)
 head(pollinator_occurrences)
 
-# Dépendances des cultures à la pollinisation
 data(crop_dependencies)
 print(crop_dependencies)
 ```
 
-## Simulation d'un workflow reproductible
+## Workflow reproductible avec données synthétiques
 
 Cette section illustre le pipeline complet avec des données synthétiques
 légères, garantissant que la vignette s'exécute sans connexion Internet
@@ -61,7 +64,6 @@ ni téléchargement.
 ### 1. Préparer des données d'occurrence
 
 ```{r occ-prep}
-# Utilisation des données intégrées
 occ <- pollinator_occurrences
 cat("Nombre d'occurrences :", nrow(occ), "\n")
 cat("Espèces :", paste(unique(occ$species), collapse = ", "), "\n")
@@ -70,21 +72,16 @@ cat("Espèces :", paste(unique(occ$species), collapse = ", "), "\n")
 ### 2. Créer un raster environnemental synthétique
 
 ```{r env-raster}
-set.seed(42)
-
-# Raster simulant une région d'étude (Maroc central)
 env <- terra::rast(
   nrows = 30, ncols = 30,
   xmin = -9, xmax = -4,
   ymin = 31, ymax = 36,
   crs = "EPSG:4326"
 )
-
-# Trois variables environnementales simulées
 terra::values(env) <- cbind(
-  bio1  = rnorm(900, mean = 18, sd = 4),   # Température moyenne
-  bio12 = rnorm(900, mean = 350, sd = 80), # Précipitations annuelles
-  ndvi  = runif(900, min = 0.1, max = 0.8) # NDVI
+  bio1  = rnorm(900, mean = 18, sd = 4),
+  bio12 = rnorm(900, mean = 350, sd = 80),
+  ndvi  = runif(900, min = 0.1, max = 0.8)
 )
 names(env) <- c("bio1", "bio12", "ndvi")
 print(env)
@@ -103,7 +100,8 @@ cat("Points retenus :", nrow(occ_clean$data), "\n")
 
 ```{r predictors}
 pred_data <- prepare_predictors(occ_clean$data, env)
-cat("Dimensions du dataset SDM :", nrow(pred_data), "lignes x", ncol(pred_data), "colonnes\n")
+cat("Dimensions du dataset SDM :", nrow(pred_data), "lignes x",
+    ncol(pred_data), "colonnes\n")
 head(pred_data)
 ```
 
@@ -117,22 +115,21 @@ cat("Nombre de background points :", nrow(bg), "\n")
 ### 6. Préparer le dataset d'entraînement
 
 ```{r train-data}
-# Extraire les valeurs raster pour les background points
 bg_coords <- sf::st_coordinates(bg)
-bg_vals <- terra::extract(env, bg_coords)
-bg_df <- cbind(occurrence = 0, bg_vals)
+bg_vals   <- terra::extract(env, bg_coords)
+bg_df     <- cbind(occurrence = 0, bg_vals)
 
-# Combiner présences et absences
-train_df <- rbind(pred_data, bg_df)
-train_df <- train_df[complete.cases(train_df), ]
+train_df  <- rbind(pred_data, bg_df)
+train_df  <- train_df[complete.cases(train_df), ]
 train_df$occurrence <- as.factor(train_df$occurrence)
-cat("Présences :", sum(train_df$occurrence == "1"), "| Absences :", sum(train_df$occurrence == "0"), "\n")
+
+cat("Présences :", sum(train_df$occurrence == "1"),
+    "| Absences :", sum(train_df$occurrence == "0"), "\n")
 ```
 
 ### 7. Entraîner le modèle SDM
 
 ```{r train-model}
-set.seed(123)
 model <- train_sdm_model(train_df, method = "rf", ntree = 100)
 print(model)
 ```
@@ -141,38 +138,33 @@ print(model)
 
 ```{r predict}
 pred_raster <- predict_pollinator_distribution(model, env)
-cat("Raster de suitabilité :\n")
-print(pred_raster)
-cat("Min :", terra::global(pred_raster, "min", na.rm = TRUE)[[1]], "\n")
-cat("Max :", terra::global(pred_raster, "max", na.rm = TRUE)[[1]], "\n")
+cat("Min :", round(terra::global(pred_raster, "min", na.rm = TRUE)[[1]], 3), "\n")
+cat("Max :", round(terra::global(pred_raster, "max", na.rm = TRUE)[[1]], 3), "\n")
 ```
 
 ### 9. Visualiser la carte de suitabilité
 
-```{r plot-map, fig.width=6, fig.height=5}
+```{r plot-map}
 plot_pollinator_map(pred_raster)
 ```
 
 ### 10. Calculer l'indice et le déficit de pollinisation
 
 ```{r deficit}
-# Raster simulant la demande agricole
-set.seed(7)
 crop_demand <- terra::rast(pred_raster)
 terra::values(crop_demand) <- runif(terra::ncell(crop_demand), 0.3, 0.9)
 names(crop_demand) <- "crop_demand"
 
-# Indice de pollinisation
 pollination_idx <- calculate_pollination_index(pred_raster, crop_demand)
+deficit         <- calculate_pollination_deficit(pred_raster, pollination_idx)
 
-# Déficit de pollinisation
-deficit <- calculate_pollination_deficit(pred_raster, pollination_idx)
-cat("Déficit moyen :", round(terra::global(deficit, "mean", na.rm = TRUE)[[1]], 3), "\n")
+cat("Déficit moyen :",
+    round(terra::global(deficit, "mean", na.rm = TRUE)[[1]], 3), "\n")
 ```
 
 ### 11. Visualiser le déficit
 
-```{r plot-deficit, fig.width=6, fig.height=5}
+```{r plot-deficit}
 plot_pollination_deficit(deficit)
 ```
 
@@ -188,9 +180,9 @@ print(landscape_stats)
 
 ```{r recommendations}
 reco <- generate_recommendations(
-  prediction_raster = pred_raster,
+  prediction_raster   = pred_raster,
   pollination_deficit = deficit,
-  landscape = landscape_stats
+  landscape           = landscape_stats
 )
 cat("Recommandations générées :\n")
 for (r in reco) cat(" -", r, "\n")
@@ -203,35 +195,26 @@ Pour une application réelle avec données GBIF et WorldClim :
 ```{r real-workflow, eval=FALSE}
 library(pollinatorSDM)
 
-# 1. Télécharger les occurrences GBIF
 occ <- download_pollinator_data(
   species = c("Apis mellifera", "Bombus terrestris"),
   country = "MA",
-  limit = 500
+  limit   = 500
 )
-
-# 2. Télécharger les couches WorldClim
 env <- download_environmental_layers(res = 10)
-
-# 3. Nettoyer les occurrences
 occ_clean <- clean_occurrences(occ, env)
-
-# 4. Préparer les prédicteurs
 pred_data <- prepare_predictors(occ_clean$data, env)
-
-# 5. Générer pseudo-absences
-bg <- generate_background_points(env, presence_sf = occ_clean$data, n_points = 1000)
+bg        <- generate_background_points(env,
+               presence_sf = occ_clean$data, n_points = 1000)
 
 # ... même pipeline que ci-dessus ...
 
-# 14. Générer le rapport complet
 generate_report(
-  pollinator_data = occ_clean$data,
-  model = model,
-  prediction_raster = pred_raster,
+  pollinator_data     = occ_clean$data,
+  model               = model,
+  prediction_raster   = pred_raster,
   pollination_deficit = deficit,
-  recommendations = reco,
-  output_file = "pollinator_report.html"
+  recommendations     = reco,
+  output_file         = "pollinator_report.html"
 )
 ```
 

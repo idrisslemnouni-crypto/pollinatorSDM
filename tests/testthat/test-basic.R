@@ -19,8 +19,18 @@ make_occurrences <- function(n = 10) {
   data.frame(
     decimalLongitude = runif(n, -8.5, -4.5),
     decimalLatitude  = runif(n, 31.5, 35.5),
-    species          = sample(c("Apis mellifera", "Bombus terrestris"), n, replace = TRUE),
+    species          = sample(c("Apis mellifera", "Bombus terrestris"),
+                              n, replace = TRUE),
     stringsAsFactors = FALSE
+  )
+}
+
+make_train_df <- function(n_per_class = 25, seed = 99) {
+  set.seed(seed)
+  data.frame(
+    occurrence = factor(rep(c(0, 1), each = n_per_class)),
+    var1 = c(rnorm(n_per_class, 10, 2), rnorm(n_per_class, 15, 2)),
+    var2 = c(rnorm(n_per_class,  5, 1), rnorm(n_per_class,  8, 1))
   )
 }
 
@@ -36,9 +46,9 @@ test_that("clean_occurrences returns list with data and report", {
   r <- make_raster()
   result <- clean_occurrences(x, r)
   expect_type(result, "list")
-  expect_true("data" %in% names(result))
+  expect_true("data"   %in% names(result))
   expect_true("report" %in% names(result))
-  expect_s3_class(result$data, "sf")
+  expect_s3_class(result$data,   "sf")
   expect_s3_class(result$report, "data.frame")
 })
 
@@ -48,11 +58,13 @@ test_that("generate_background_points errors if presence_sf is missing", {
   expect_error(generate_background_points(r, n_points = 50))
 })
 
-test_that("generate_background_points returns sf object", {
+test_that("generate_background_points returns sf object with positive rows", {
   set.seed(42)
-  r <- make_raster(20, 20)
-  occ <- make_occurrences(5)
-  pres_sf <- sf::st_as_sf(occ, coords = c("decimalLongitude", "decimalLatitude"), crs = 4326)
+  r       <- make_raster(20, 20)
+  occ     <- make_occurrences(5)
+  pres_sf <- sf::st_as_sf(occ,
+               coords = c("decimalLongitude", "decimalLatitude"),
+               crs    = 4326)
   bg <- generate_background_points(r, presence_sf = pres_sf, n_points = 30)
   expect_s3_class(bg, "sf")
   expect_gt(nrow(bg), 0)
@@ -65,14 +77,23 @@ test_that("train_sdm_model errors if occurrence column is missing", {
 })
 
 test_that("train_sdm_model returns a randomForest object", {
-  set.seed(99)
-  df <- data.frame(
-    occurrence = factor(rep(c(0, 1), each = 25)),
-    var1 = c(rnorm(25, 10, 2), rnorm(25, 15, 2)),
-    var2 = c(rnorm(25, 5, 1),  rnorm(25, 8, 1))
-  )
+  df    <- make_train_df()
   model <- train_sdm_model(df, ntree = 50)
   expect_s3_class(model, "randomForest")
+})
+
+# ─── evaluate_models ─────────────────────────────────────────────────────────
+test_that("evaluate_models returns a list with AUC and Accuracy", {
+  df    <- make_train_df()
+  model <- train_sdm_model(df, ntree = 50)
+  eval  <- evaluate_models(model, df)
+  expect_type(eval, "list")
+  expect_true("AUC"      %in% names(eval))
+  expect_true("Accuracy" %in% names(eval))
+  expect_gte(eval$AUC,      0)
+  expect_lte(eval$AUC,      1)
+  expect_gte(eval$Accuracy, 0)
+  expect_lte(eval$Accuracy, 1)
 })
 
 # ─── calculate_pollination_deficit ───────────────────────────────────────────
@@ -98,13 +119,6 @@ test_that("calculate_pollination_index returns raster named pollination_index", 
   expect_equal(names(result), "pollination_index")
 })
 
-# ─── plot_pollinator_map ──────────────────────────────────────────────────────
-test_that("plot_pollinator_map runs without error on a simple raster", {
-  r <- make_raster(10, 10, 1)
-  names(r) <- "suitability"
-  expect_no_error(plot_pollinator_map(r))
-})
-
 # ─── predict_pollinator_distribution ─────────────────────────────────────────
 test_that("predict_pollinator_distribution errors if model is not randomForest", {
   r <- make_raster()
@@ -112,12 +126,42 @@ test_that("predict_pollinator_distribution errors if model is not randomForest",
 })
 
 test_that("predict_pollinator_distribution errors if rasters is not SpatRaster", {
-  set.seed(99)
-  df <- data.frame(
-    occurrence = factor(rep(c(0, 1), each = 25)),
-    var1 = c(rnorm(25, 10, 2), rnorm(25, 15, 2)),
-    var2 = c(rnorm(25, 5, 1),  rnorm(25, 8, 1))
-  )
+  df    <- make_train_df()
   model <- train_sdm_model(df, ntree = 50)
   expect_error(predict_pollinator_distribution(model, data.frame()))
+})
+
+test_that("predict_pollinator_distribution returns SpatRaster with values in [0,1]", {
+  df    <- make_train_df()
+  model <- train_sdm_model(df, ntree = 50)
+  r     <- make_raster(n_layers = 2)
+  names(r) <- c("var1", "var2")
+  pred  <- predict_pollinator_distribution(model, r)
+  expect_s4_class(pred, "SpatRaster")
+  expect_gte(terra::global(pred, "min", na.rm = TRUE)[[1]], 0)
+  expect_lte(terra::global(pred, "max", na.rm = TRUE)[[1]], 1)
+})
+
+# ─── plot_pollinator_map ──────────────────────────────────────────────────────
+test_that("plot_pollinator_map runs without error on a simple raster", {
+  r        <- make_raster(10, 10, 1)
+  names(r) <- "suitability"
+  expect_no_error(plot_pollinator_map(r))
+})
+
+# ─── built-in datasets ───────────────────────────────────────────────────────
+test_that("pollinator_occurrences dataset is a data.frame with required columns", {
+  data(pollinator_occurrences, package = "pollinatorSDM")
+  expect_s3_class(pollinator_occurrences, "data.frame")
+  expect_true(all(c("species", "decimalLongitude",
+                    "decimalLatitude") %in% names(pollinator_occurrences)))
+  expect_gt(nrow(pollinator_occurrences), 0)
+})
+
+test_that("crop_dependencies dataset is a data.frame with dependency column", {
+  data(crop_dependencies, package = "pollinatorSDM")
+  expect_s3_class(crop_dependencies, "data.frame")
+  expect_true("dependency" %in% names(crop_dependencies))
+  expect_true(all(crop_dependencies$dependency >= 0 &
+                    crop_dependencies$dependency <= 1))
 })
