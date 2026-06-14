@@ -3,9 +3,11 @@
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![R version](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)](https://cran.r-project.org)
+[![Tests](https://img.shields.io/badge/tests-16%20passing-brightgreen.svg)](tests/testthat)
+[![Functions](https://img.shields.io/badge/functions-21-blue.svg)](R/)
 <!-- badges: end -->
 
-# pollinatorSDM
+# pollinatorSDM <img src="man/figures/pred_prob_suitability.png" align="right" height="160" alt="Pollinator suitability map Morocco"/>
 
 > **Species Distribution Models for Pollinators and Pollination Deficit Assessment**
 
@@ -24,6 +26,7 @@
 - [Built-in Datasets](#built-in-datasets)
 - [Output Examples](#output-examples)
 - [Dependencies](#dependencies)
+- [Tests](#tests)
 - [Author](#author)
 
 ---
@@ -87,7 +90,8 @@ pollinatorSDM/
 │   ├── import_crop_data.R
 │   ├── import_crop_map.R
 │   ├── data.R                  # Dataset documentation
-│   └── crop_dependencies.R
+│   ├── crop_dependencies.R
+│   └── utils.R                 # Internal helper functions
 ├── man/                        # Roxygen2-generated documentation (20 .Rd files)
 │   └── figures/
 │       └── pred_prob_suitability.png
@@ -95,10 +99,17 @@ pollinatorSDM/
 │   ├── pollinator_occurrences.rda
 │   └── crop_dependencies.rda
 ├── data-raw/                   # Scripts used to generate datasets
-├── tests/testthat/             # Unit tests — 14 tests (testthat 3.0)
-│   └── test-basic.R
+├── tests/
+│   ├── testthat.R
+│   └── testthat/               # Unit tests — testthat 3.0 (16 tests, 5 files)
+│       ├── test-clean_occurrences.R
+│       ├── test-calculate_pollination_index.R
+│       ├── test-calculate_pollination_deficit.R
+│       ├── test-evaluate_models.R
+│       ├── test-generate_background_points.R
+│       └── test-train_sdm_model.R
 ├── vignettes/
-│   └── pollinatorSDM.Rmd       # Reproducible workflow vignette
+│   └── pollinatorSDM.Rmd       # Reproducible workflow vignette (13 steps)
 ├── inst/
 │   └── rmarkdown/templates/    # Report template
 ├── DESCRIPTION
@@ -118,7 +129,7 @@ library(pollinatorSDM)
 library(terra)
 library(sf)
 
-# ── 1. Load built-in occurrence data ──────────────────────────────────────────
+# ── 1. Load built-in occurrence data ────────────────────────────────────────
 data(pollinator_occurrences)
 head(pollinator_occurrences)
 #>              species decimalLongitude decimalLatitude year
@@ -126,7 +137,7 @@ head(pollinator_occurrences)
 #> 2  Bombus terrestris        -6.834521        34.45231 2020
 #> 3 Bombus lapidarius        -5.912341        32.87654 2021
 
-# ── 2. Create a synthetic environmental raster ────────────────────────────────
+# ── 2. Create a synthetic environmental raster ──────────────────────────────
 set.seed(42)
 env <- terra::rast(nrows=30, ncols=30,
                   xmin=-9, xmax=-4, ymin=31, ymax=36,
@@ -138,11 +149,11 @@ terra::values(env) <- cbind(
 )
 names(env) <- c("bio1", "bio12", "ndvi")
 
-# ── 3. Clean occurrences ──────────────────────────────────────────────────────
+# ── 3. Clean occurrences ────────────────────────────────────────────────────
 occ_clean <- clean_occurrences(pollinator_occurrences, env)
 cat(nrow(occ_clean$data), "valid occurrences retained\n")
 
-# ── 4. Train SDM model ────────────────────────────────────────────────────────
+# ── 4. Train SDM model ──────────────────────────────────────────────────────
 pred_data <- prepare_predictors(occ_clean$data, env)
 bg        <- generate_background_points(env,
                presence_sf = occ_clean$data, n_points = 100)
@@ -155,12 +166,12 @@ train_df$occurrence <- as.factor(train_df$occurrence)
 set.seed(123)
 model <- train_sdm_model(train_df, ntree = 100)
 
-# ── 5. Evaluate ───────────────────────────────────────────────────────────────
+# ── 5. Evaluate ─────────────────────────────────────────────────────────────
 metrics <- evaluate_models(model, train_df)
 cat(sprintf("AUC = %.3f | Accuracy = %.3f\n", metrics$AUC, metrics$Accuracy))
 #> AUC = 0.891 | Accuracy = 0.847
 
-# ── 6. Predict & visualise ────────────────────────────────────────────────────
+# ── 6. Predict & visualise ──────────────────────────────────────────────────
 pred_raster <- predict_pollinator_distribution(model, env)
 plot_pollinator_map(pred_raster)
 ```
@@ -174,7 +185,7 @@ plot_pollinator_map(pred_raster)
 ```r
 library(pollinatorSDM)
 
-# ── Data acquisition ──────────────────────────────────────────────────────────
+# Data acquisition
 occ <- download_pollinator_data(
   species = c("Apis mellifera", "Bombus terrestris"),
   country = "MA",
@@ -182,38 +193,37 @@ occ <- download_pollinator_data(
 )
 env <- download_environmental_layers(res = 10)
 
-# ── Data preparation ──────────────────────────────────────────────────────────
+# Data preparation
 occ_clean  <- clean_occurrences(occ, env)
 pred_data  <- prepare_predictors(occ_clean$data, env)
 bg         <- generate_background_points(env,
                 presence_sf = occ_clean$data, n_points = 1000)
-
-bg_vals  <- cbind(occurrence = 0,
-              terra::extract(env, sf::st_coordinates(bg)))
-train_df <- rbind(pred_data, bg_vals)
-train_df <- train_df[complete.cases(train_df), ]
+bg_vals    <- cbind(occurrence = 0,
+                terra::extract(env, sf::st_coordinates(bg)))
+train_df   <- rbind(pred_data, bg_vals)
+train_df   <- train_df[complete.cases(train_df), ]
 train_df$occurrence <- as.factor(train_df$occurrence)
 
-# ── Modelling ─────────────────────────────────────────────────────────────────
+# Modelling
 model   <- train_sdm_model(train_df, ntree = 500)
 metrics <- evaluate_models(model, train_df)
 cat(sprintf("AUC = %.3f | Accuracy = %.3f\n", metrics$AUC, metrics$Accuracy))
 
-# ── Spatial prediction ────────────────────────────────────────────────────────
+# Spatial prediction
 pred_raster <- predict_pollinator_distribution(model, env)
 
-# ── Pollination analysis ──────────────────────────────────────────────────────
+# Pollination analysis
 crop_map     <- import_crop_data()
 poll_index   <- calculate_pollination_index(pred_raster, crop_map)
 poll_deficit <- calculate_pollination_deficit(pred_raster, poll_index)
 landscape    <- analyze_landscape(env)
 risk_summary <- summarize_risk_by_region(poll_deficit, crop_map)
 
-# ── Visualisation ─────────────────────────────────────────────────────────────
+# Visualisation
 plot_pollinator_map(pred_raster)
 plot_pollination_deficit(poll_deficit)
 
-# ── Recommendations & report ──────────────────────────────────────────────────
+# Recommendations & report
 reco <- generate_recommendations(
   prediction_raster   = pred_raster,
   pollination_deficit = poll_deficit,
@@ -311,27 +321,33 @@ print(crop_dependencies)
 
 ## Output Examples
 
+### Habitat Suitability Map
+
+![Predicted pollinator habitat suitability map for Morocco](man/figures/pred_prob_suitability.png)
+
+*Predicted habitat suitability for pollinators (Random Forest SDM). Colour scale: viridis (purple = low, yellow = high). Generated with `plot_pollinator_map()`.*
+
 ### Model Evaluation Output
 
 ```
-── SDM Model Evaluation ────────────────────────────────────────
+── SDM Model Evaluation ─────────────────────────────────────
   AUC         : 0.891
   Accuracy    : 0.847
   Sensitivity : 0.862
   Specificity : 0.831
   Threshold   : 0.481  (Youden index)
-────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────
 ```
 
 ### Pollination Deficit Summary
 
 ```
-── Deficit by Region ───────────────────────────────────────────
+── Deficit by Region ─────────────────────────────────────────
   Region         Mean_deficit  Risk_class
   Tadla-Azilal        0.67      HIGH
   Souss-Massa         0.41      MODERATE
   Chaouia             0.18      LOW
-────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────
 ```
 
 ---
@@ -352,6 +368,25 @@ Suggested: `rgbif`, `geodata`
 
 ---
 
+## Tests
+
+The package includes **16 unit tests** across **5 test files**, using `testthat` edition 3:
+
+```r
+# Run all tests
+devtools::test()
+
+# Tests cover:
+# ✔ clean_occurrences             — NA removal, report output, sf class
+# ✔ calculate_pollination_index   — raster output, values in [0,1]
+# ✔ calculate_pollination_deficit — raster output, non-negative values
+# ✔ evaluate_models               — AUC in [0,1], metric names present
+# ✔ generate_background_points    — sf output, n_points respected
+# ✔ train_sdm_model               — model non-null, error on missing column
+```
+
+---
+
 ## Vignette
 
 ```r
@@ -359,6 +394,8 @@ vignette("pollinatorSDM")
 ```
 
 Or browse online: [`vignettes/pollinatorSDM.Rmd`](vignettes/pollinatorSDM.Rmd)
+
+The vignette covers the **full 13-step workflow** from synthetic data creation to automated recommendations — fully reproducible without internet access.
 
 ---
 
