@@ -1,38 +1,25 @@
-#' Pollinator occurrence example data
+#' Dépendances des cultures à la pollinisation
 #'
-#' A dataset of simulated pollinator occurrence records for three species
-#' across a study region in Morocco.
+#' Jeu de données sur les principales cultures agricoles dépendantes de la
+#' pollinisation entomophile, avec leur coefficient de dépendance estimé.
 #'
-#' @format A data frame with 30 rows and 4 variables:
+#' @format Un data.frame avec 15 lignes et 5 variables :
 #' \describe{
-#'   \item{species}{Character. Scientific name of the pollinator species.
-#'     Values: "Apis mellifera", "Bombus terrestris", "Bombus lapidarius".}
-#'   \item{decimalLongitude}{Numeric. Longitude in decimal degrees (WGS84).}
-#'   \item{decimalLatitude}{Numeric. Latitude in decimal degrees (WGS84).}
-#'   \item{year}{Integer. Year of observation.}
+#'   \item{crop}{Nom français de la culture}
+#'   \item{crop_type}{Catégorie : fruitier, oleagineux, legume, aromatique, fourrager}
+#'   \item{poll_dependency}{Coefficient de dépendance à la pollinisation (0-1)}
+#'   \item{area_ha}{Surface agricole estimée en France (hectares)}
+#'   \item{region}{Région de référence}
 #' }
-#' @source Simulated data for package illustration purposes.
-#' @examples
-#' data(pollinator_occurrences)
-#' head(pollinator_occurrences)
-"pollinator_occurrences"
-
-#' Crop pollination dependency data
 #'
-#' A dataset of crop species and their dependence on insect pollination,
-#' based on FAO and Klein et al. (2007) classifications.
-#'
-#' @format A data frame with 5 rows and 3 variables:
-#' \describe{
-#'   \item{crop}{Character. Common name of the crop.}
-#'   \item{dependency}{Numeric. Pollination dependency factor (0 to 1).
-#'     0 = no dependence, 1 = full dependence.}
-#'   \item{notes}{Character. Brief description of the dependency level.}
-#' }
 #' @source Klein, A.M. et al. (2007). Importance of pollinators in changing
-#'   landscapes for world crops. Proceedings of the Royal Society B, 274(1608),
-#'   303-313.
+#'   landscapes for world crops. \emph{Proceedings of the Royal Society B},
+#'   274(1608), 303-313.
+#'
 #' @examples
 #' data(crop_dependencies)
 #' head(crop_dependencies)
+#' hist(crop_dependencies$poll_dependency,
+#'      main = "Distribution des coefficients de dépendance",
+#'      xlab = "Dépendance à la pollinisation")
 "crop_dependencies"
