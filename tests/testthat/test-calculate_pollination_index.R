@@ -1,4 +1,4 @@
-test_that("calculate_pollination_index retourne un raster", {
+test_that("calculate_pollination_index retourne un SpatRaster", {
   r <- terra::rast(
     nrows = 10, ncols = 10,
     xmin = -9, xmax = -4,
@@ -13,7 +13,6 @@ test_that("calculate_pollination_index retourne un raster", {
   names(demand) <- "crop_demand"
 
   idx <- calculate_pollination_index(r, demand)
-
   expect_true(inherits(idx, "SpatRaster"))
   vals <- terra::values(idx, na.rm = TRUE)
   expect_true(all(vals >= 0))

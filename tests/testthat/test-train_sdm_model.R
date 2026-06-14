@@ -1,4 +1,4 @@
-test_that("train_sdm_model retourne un modele randomForest", {
+test_that("train_sdm_model retourne un modele non-null", {
   set.seed(42)
   df <- data.frame(
     occurrence = factor(rep(c("1","0"), each = 50)),
@@ -7,10 +7,7 @@ test_that("train_sdm_model retourne un modele randomForest", {
     ndvi       = runif(100, 0.1, 0.8)
   )
   model <- train_sdm_model(df, method = "rf", ntree = 100)
-
-  expect_true(inherits(model, "randomForest") ||
-              inherits(model, "list") ||
-              !is.null(model))
+  expect_false(is.null(model))
 })
 
 test_that("train_sdm_model refuse un dataset sans colonne occurrence", {
@@ -21,7 +18,7 @@ test_that("train_sdm_model refuse un dataset sans colonne occurrence", {
   expect_error(train_sdm_model(df_bad, method = "rf"))
 })
 
-test_that("train_sdm_model fonctionne avec methode rf", {
+test_that("train_sdm_model fonctionne avec ntree = 50", {
   set.seed(1)
   df <- data.frame(
     occurrence = factor(rep(c("1","0"), each = 30)),

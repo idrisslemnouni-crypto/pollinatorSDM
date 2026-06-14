@@ -11,7 +11,6 @@ test_that("evaluate_models retourne AUC entre 0 et 1", {
   perf  <- evaluate_models(model, df)
 
   expect_true(is.list(perf) || is.data.frame(perf))
-  # Verifier presence d'une metrique AUC
   auc_val <- if (is.data.frame(perf)) perf$AUC[1] else perf$AUC
   if (!is.null(auc_val)) {
     expect_gte(as.numeric(auc_val), 0)
@@ -19,7 +18,7 @@ test_that("evaluate_models retourne AUC entre 0 et 1", {
   }
 })
 
-test_that("evaluate_models inclut accuracy, sensibilite, specificite", {
+test_that("evaluate_models inclut des metriques nommees", {
   set.seed(7)
   n  <- 80
   df <- data.frame(
@@ -30,7 +29,6 @@ test_that("evaluate_models inclut accuracy, sensibilite, specificite", {
   )
   model <- train_sdm_model(df, method = "rf", ntree = 50)
   perf  <- evaluate_models(model, df)
-
-  nms <- if (is.data.frame(perf)) names(perf) else names(perf)
+  nms   <- if (is.data.frame(perf)) names(perf) else names(perf)
   expect_true(any(grepl("(?i)acc|auc|sens|spec", nms, perl = TRUE)))
 })

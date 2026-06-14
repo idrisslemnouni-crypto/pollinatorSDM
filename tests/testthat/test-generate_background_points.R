@@ -12,18 +12,18 @@ test_that("generate_background_points retourne un objet sf", {
   )
   names(env) <- c("bio1", "bio12", "ndvi")
 
-  presence <- data.frame(longitude = c(-5.5, -6.0), latitude = c(33.5, 34.0))
-  presence_sf <- sf::st_as_sf(presence, coords = c("longitude","latitude"),
-                               crs = 4326)
+  presence_sf <- sf::st_as_sf(
+    data.frame(longitude = c(-5.5, -6.0), latitude = c(33.5, 34.0)),
+    coords = c("longitude", "latitude"), crs = 4326
+  )
 
   bg <- generate_background_points(env, presence_sf = presence_sf, n_points = 50)
-
   expect_true(inherits(bg, "sf"))
   expect_lte(nrow(bg), 50)
   expect_gt(nrow(bg), 0)
 })
 
-test_that("generate_background_points respecte le nombre de points demandes", {
+test_that("generate_background_points respecte n_points", {
   env <- terra::rast(
     nrows = 30, ncols = 30,
     xmin = -9, xmax = -4,
@@ -39,7 +39,7 @@ test_that("generate_background_points respecte le nombre de points demandes", {
 
   presence_sf <- sf::st_as_sf(
     data.frame(longitude = -5.5, latitude = 33.5),
-    coords = c("longitude","latitude"), crs = 4326
+    coords = c("longitude", "latitude"), crs = 4326
   )
 
   bg <- generate_background_points(env, presence_sf = presence_sf, n_points = 80)

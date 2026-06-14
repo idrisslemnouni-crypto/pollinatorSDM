@@ -1,4 +1,4 @@
-test_that("calculate_pollination_deficit retourne un raster", {
+test_that("calculate_pollination_deficit retourne un SpatRaster", {
   r <- terra::rast(
     nrows = 10, ncols = 10,
     xmin = -9, xmax = -4,
@@ -14,7 +14,6 @@ test_that("calculate_pollination_deficit retourne un raster", {
 
   idx     <- calculate_pollination_index(r, demand)
   deficit <- calculate_pollination_deficit(r, idx)
-
   expect_true(inherits(deficit, "SpatRaster"))
 })
 

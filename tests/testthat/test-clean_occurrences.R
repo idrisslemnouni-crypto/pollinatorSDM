@@ -24,14 +24,13 @@ test_that("clean_occurrences removes NA coordinates", {
   expect_true("data"   %in% names(result))
   expect_true("report" %in% names(result))
   expect_true(inherits(result$data, "sf"))
-  # le point avec NA doit avoir ete retire
   expect_lt(nrow(result$data), nrow(occ))
 })
 
 test_that("clean_occurrences retourne un rapport de nettoyage", {
   occ <- data.frame(
     species   = c("Apis mellifera", "Apis mellifera"),
-    longitude = c(-5.5, -5.5),     # doublon spatial
+    longitude = c(-5.5, -5.5),
     latitude  = c(33.5, 33.5),
     stringsAsFactors = FALSE
   )
