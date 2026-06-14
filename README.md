@@ -5,7 +5,7 @@
 [![R version](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)](https://cran.r-project.org)
 <!-- badges: end -->
 
-# pollinatorSDM <img src="man/figures/README-example.png" align="right" height="140" alt="pollinatorSDM logo"/>
+# pollinatorSDM <img src="pred_prob_suitability.png" align="right" height="160" alt="Pollinator suitability map Morocco"/>
 
 > **Species Distribution Models for Pollinators and Pollination Deficit Assessment**
 
@@ -89,9 +89,6 @@ pollinatorSDM/
 │   ├── data.R                  # Dataset documentation
 │   └── utils.R
 ├── man/                        # Roxygen2-generated documentation
-│   └── figures/
-│       ├── README-example.png  # Package hex-sticker logo
-│       └── pred_prob_suitability.png
 ├── data/                       # Built-in example datasets (.rda)
 │   ├── pollinator_occurrences.rda
 │   └── crop_dependencies.rda
@@ -281,8 +278,6 @@ generate_report(
 
 ## Built-in Datasets
 
-The package ships with two ready-to-use datasets:
-
 ### `pollinator_occurrences`
 
 ```r
@@ -310,42 +305,15 @@ print(crop_dependencies)
 #> 5 sunflower       0.65 Substantially dependent
 ```
 
-Pollination dependency factors for 5 crops, based on Klein *et al.* (2007).
-
 ---
 
 ## Output Examples
 
 ### Habitat Suitability Map
 
-> Continuous probability surface (0–1) predicted by the Random Forest SDM over Morocco.
-> Generated with `plot_pollinator_map()`. Warmer colours = higher habitat suitability.
+![Predicted pollinator habitat suitability map for Morocco](pred_prob_suitability.png)
 
-```r
-# Reproduce this output:
-pred_raster <- predict_pollinator_distribution(model, env)
-plot_pollinator_map(pred_raster,
-  title = "Predicted Pollinator Habitat Suitability — Morocco")
-```
-
-```
-Predicted Pollinator Habitat Suitability — Morocco
-
-Latitude
-36 | . . . . . . . . . . . . . . . .
-35 | . ░ ░ ▒ ▒ ░ . . . ░ ▒ ░ . . . .
-34 | . ▒ ▓ █ ▓ ▒ ░ . ░ ▒ ▓ ▒ . . . .
-33 | . ░ ▓ █ █ ▓ ▒ ░ ▒ ▓ █ ▓ ░ . . .
-32 | . . ▒ ▓ ▓ █ ▓ ▒ ▓ █ ▓ ▒ . . . .
-31 | . . . ░ ▒ ▓ ▓ ▓ ▓ ▒ ░ . . . . .
-     ---+---------------------------
-       -9  -8  -7  -6  -5  -4  Longitude
-
-▓█ = High suitability (0.7–1.0)
-▒  = Moderate (0.4–0.7)
-░  = Low (0.1–0.4)
-.  = Unsuitable (0–0.1)
-```
+*Predicted habitat suitability for pollinators (Random Forest SDM). Colour scale: viridis (purple = low, yellow = high). Generated with `plot_pollinator_map()`.*
 
 ### Model Evaluation Output
 
@@ -384,13 +352,11 @@ Latitude
 | `pROC` | AUC computation and ROC curves |
 | `rmarkdown` + `knitr` | Automated HTML report generation |
 
-Suggested (for real-data workflows): `rgbif`, `geodata`
+Suggested: `rgbif`, `geodata`
 
 ---
 
 ## Vignette
-
-A fully reproducible vignette is available:
 
 ```r
 vignette("pollinatorSDM")
@@ -401,8 +367,6 @@ Or browse online: [`vignettes/pollinatorSDM.Rmd`](vignettes/pollinatorSDM.Rmd)
 ---
 
 ## Citation
-
-If you use this package in your work, please cite:
 
 > Lemnouni I. (2026). *pollinatorSDM: Species Distribution Models for Pollinators and Pollination Deficit*. R package version 0.1.0. <https://github.com/idrisslemnouni-crypto/pollinatorSDM>
 
