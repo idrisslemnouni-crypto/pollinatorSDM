@@ -1,34 +1,42 @@
-#' Pipe operator
-#'
-#' Re-exports the magrittr pipe operator for use within the package.
-#'
-#' @importFrom dplyr %>%
-#' @name %>%
-#' @rdname pipe
-#' @export
+#' @importFrom stats na.omit predict rgamma rnorm runif cor complete.cases
 NULL
 
-#' Check that a SpatRaster has named layers
+#' Verifier si un objet est un raster SpatRaster
 #'
-#' @param raster A \code{SpatRaster} object.
-#' @param required_names Character vector of required layer names.
-#' @return Invisible \code{TRUE} if all layers are present; stops otherwise.
+#' @param x objet a tester
+#' @return logical TRUE si x est un SpatRaster
 #' @keywords internal
-check_raster_layers <- function(raster, required_names) {
-  missing_layers <- setdiff(required_names, names(raster))
-  if (length(missing_layers) > 0) {
-    stop("Missing raster layers: ", paste(missing_layers, collapse = ", "))
-  }
-  invisible(TRUE)
-}
+is_raster <- function(x) inherits(x, "SpatRaster")
 
-#' Normalise a numeric vector to [0, 1]
+#' Verifier si un objet est un objet sf
 #'
-#' @param x Numeric vector.
-#' @return Numeric vector scaled between 0 and 1.
+#' @param x objet a tester
+#' @return logical TRUE si x est un sf
 #' @keywords internal
-normalise_01 <- function(x) {
+is_sf <- function(x) inherits(x, "sf")
+
+#' Calculer le pourcentage de NA dans un vecteur
+#'
+#' @param x vecteur numerique
+#' @return numeric proportion de NA entre 0 et 1
+#' @keywords internal
+pct_na <- function(x) mean(is.na(x))
+
+#' Normaliser un vecteur entre 0 et 1
+#'
+#' @param x vecteur numerique
+#' @return vecteur normalise
+#' @keywords internal
+normalize_0_1 <- function(x) {
   rng <- range(x, na.rm = TRUE)
   if (diff(rng) == 0) return(rep(0, length(x)))
   (x - rng[1]) / diff(rng)
+}
+
+#' Message de log horodate
+#'
+#' @param ... elements a afficher
+#' @keywords internal
+log_msg <- function(...) {
+  message(format(Sys.time(), "[%H:%M:%S]"), " ", ...)
 }
