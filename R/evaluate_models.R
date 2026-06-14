@@ -4,14 +4,10 @@
 #'
 #' @param model modèle entraîné (randomForest)
 #' @param test_data data.frame de test avec occurrence et prédicteurs
-#' @return list(metrics = data.frame, roc_plot = ggplot)
+#' @return list(metrics = data.frame, roc_plot = ggplot, roc_object = pROC::roc)
 #' @export
 evaluate_models <- function(model, test_data) {
-  if (!requireNamespace("pROC", quietly = TRUE)) {
-    install.packages("pROC")
-  }
-
-  pred_prob <- predict(model, test_data, type = "prob")[, "1"]
+  pred_prob <- stats::predict(model, test_data, type = "prob")[, "1"]
   obs <- as.numeric(as.character(test_data$occurrence))
 
   # ROC et AUC
@@ -32,8 +28,8 @@ evaluate_models <- function(model, test_data) {
   fn <- sum(pred_class == 0 & obs == 1)
 
   accuracy <- (tp + tn) / length(obs)
-  sensitivity <- tp / (tp + fn)
-  specificity <- tn / (tn + fp)
+  sensitivity <- if ((tp + fn) > 0) tp / (tp + fn) else NA_real_
+  specificity <- if ((tn + fp) > 0) tn / (tn + fp) else NA_real_
 
   metrics <- data.frame(
     AUC = as.numeric(auc_val),
@@ -50,14 +46,14 @@ evaluate_models <- function(model, test_data) {
   )
 
   roc_plot <- ggplot2::ggplot(roc_df, ggplot2::aes(x = 1 - specificity, y = sensitivity)) +
-    ggplot2::geom_line(color = "blue", size = 1) +
-    ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+    ggplot2::geom_line(color = "steelblue", linewidth = 1) +
+    ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "grey50") +
     ggplot2::labs(
       title = paste("ROC Curve (AUC =", round(as.numeric(auc_val), 3), ")"),
-      x = "1 - Specificity",
-      y = "Sensitivity"
+      x = "1 - Specificity (False Positive Rate)",
+      y = "Sensitivity (True Positive Rate)"
     ) +
-    ggplot2::theme_minimal()
+    ggplot2::theme_minimal(base_size = 12)
 
   list(metrics = metrics, roc_plot = roc_plot, roc_object = roc_obj)
 }
