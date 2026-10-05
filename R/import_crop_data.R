@@ -6,7 +6,8 @@ import_crop_data <- function(file_path = NULL) {
   if (!is.null(file_path) && file.exists(file_path)) {
     read.csv(file_path, stringsAsFactors = FALSE)
   } else {
-    data("crop_dependencies", package = "pollinatorSDM", envir = environment())
-    crop_dependencies
+    data_env <- new.env(parent = emptyenv())
+    utils::data("crop_dependencies", package = "pollinatorSDM", envir = data_env)
+    data_env$crop_dependencies
   }
 }

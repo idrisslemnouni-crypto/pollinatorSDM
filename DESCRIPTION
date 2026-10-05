@@ -17,12 +17,12 @@ Imports:
     sf,
     randomForest,
     ggplot2,
-    dplyr,
     rmarkdown,
-    knitr,
     pROC,
-    stats
+    stats,
+    utils
 Suggests:
+    knitr,
     roxygen2,
     testthat (>= 3.0.0),
     rgbif,

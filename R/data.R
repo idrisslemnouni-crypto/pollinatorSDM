@@ -26,16 +26,16 @@
 #' Crop pollination dependency data
 #'
 #' A dataset of crop species and their dependence on insect pollination,
-#' based on FAO classifications and Klein et al. (2007).
+#' for package illustration. The stored values have not been independently
+#' verified against the cited literature and are not agronomic prescriptions.
 #'
-#' @format A data frame with 5 rows and 3 variables:
+#' @format A data frame with four variables:
 #' \describe{
-#'   \item{crop}{Character. Common name of the crop
-#'     (tomato, almond, maize, orange, sunflower).}
-#'   \item{dependency}{Numeric. Pollination dependency factor from 0 to 1.
+#'   \item{crop}{Character. Common name of the crop.}
+#'   \item{dependence_pollination}{Numeric. Illustrative dependency factor from 0 to 1.
 #'     0 = no insect pollination dependence, 1 = fully dependent.}
-#'   \item{notes}{Character. Brief qualitative description of dependency
-#'     level (e.g., "Moderately dependent", "Highly dependent").}
+#'   \item{family}{Character. Botanical family.}
+#'   \item{type}{Character. Crop category.}
 #' }
 #' @source Klein, A.M., Vaissiere, B.E., Cane, J.H., Steffan-Dewenter, I.,
 #'   Cunningham, S.A., Kremen, C. and Tscharntke, T. (2007). Importance of
@@ -47,7 +47,7 @@
 #' @examples
 #' data(crop_dependencies)
 #' print(crop_dependencies)
-#' barplot(crop_dependencies$dependency,
+#' barplot(crop_dependencies$dependence_pollination,
 #'         names.arg = crop_dependencies$crop,
 #'         main = "Pollination dependency by crop",
 #'         ylab = "Dependency factor",
