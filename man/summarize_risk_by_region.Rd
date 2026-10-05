@@ -19,13 +19,14 @@ coordinate units (default \code{1} degree).}
 \value{
 A \code{data.frame} with one row per region, containing:
 \describe{
-  \item{region_id}{Integer. Unique region identifier.}
-  \item{mean_deficit}{Numeric. Mean deficit across cells in the region.}
-  \item{max_deficit}{Numeric. Maximum deficit in the region.}
-  \item{n_cells}{Integer. Number of raster cells in the region.}
-  \item{total_crop_area_ha}{Numeric. Total crop area (ha) in the region.}
-  \item{vulnerability_score}{Numeric. Combined risk score.}
-  \item{rank}{Integer. Rank from highest to lowest vulnerability.}
+\item{region_id}{Integer. Unique region identifier.}
+\item{mean_deficit}{Numeric. Mean deficit across cells in the region.}
+\item{max_deficit}{Numeric. Maximum deficit in the region.}
+\item{n_cells}{Integer. Number of raster cells in the region.}
+\item{total_crop_area_ha}{Numeric. Total crop area (ha) in the region.}
+\item{vulnerability_score}{Numeric. Combined risk score
+(\code{mean_deficit * sqrt(total_crop_area_ha + 1)}).}
+\item{rank}{Integer. Rank from highest to lowest vulnerability.}
 }
 Rows are sorted by decreasing \code{vulnerability_score}.
 }
@@ -36,6 +37,7 @@ magnitude and crop area.
 }
 \examples{
 \dontrun{
+# requires a deficit raster and an sf crop map with area_ha column
 risk <- summarize_risk_by_region(poll_deficit, crop_map)
 print(risk)
 }

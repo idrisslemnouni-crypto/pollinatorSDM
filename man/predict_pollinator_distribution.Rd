@@ -7,13 +7,14 @@
 predict_pollinator_distribution(model, rasters)
 }
 \arguments{
-\item{model}{randomForest model}
+\item{model}{randomForest model entraîné avec train_sdm_model()}
 
-\item{rasters}{SpatRaster}
+\item{rasters}{SpatRaster avec les mêmes variables que celles utilisées à l'entraînement}
 }
 \value{
-SpatRaster
+SpatRaster avec valeurs de probabilité entre 0 et 1
 }
 \description{
-Predict pollinator distribution on raster
+Projette le modèle SDM sur un raster environnemental pour produire
+une carte de suitabilité. Retourne la probabilité de présence (classe "1").
 }

@@ -46,6 +46,9 @@ jobs:
       - name: Regenerate function documentation
         run: Rscript -e 'roxygen2::roxygenise()'
 
+      - name: Check committed help files match source
+        run: git diff --exit-code -- man NAMESPACE
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
