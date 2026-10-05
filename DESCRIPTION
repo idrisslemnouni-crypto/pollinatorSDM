@@ -2,7 +2,7 @@ Package: pollinatorSDM
 Title: Species Distribution Models for Pollinators and Pollination Deficit
 Version: 0.1.0
 Authors@R: 
-    person("Idriss", "Lemnouni", email = "idriss@example.com", role = c("aut", "cre"))
+    person("Idriss", "Lemnouni", email = "251470253+idrisslemnouni-crypto@users.noreply.github.com", role = c("aut", "cre"))
 Description: Models pollinator distribution, analyzes suitable habitats,
     estimates pollination services, and detects pollination deficit zones
     using species distribution models and landscape analysis.
@@ -17,12 +17,13 @@ Imports:
     sf,
     randomForest,
     ggplot2,
-    dplyr,
     rmarkdown,
-    knitr,
     pROC,
-    stats
+    stats,
+    utils
 Suggests:
+    knitr,
+    roxygen2,
     testthat (>= 3.0.0),
     rgbif,
     geodata

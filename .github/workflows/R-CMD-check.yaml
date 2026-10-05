@@ -38,10 +38,29 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            any::roxygen2
           needs: check
+
+      - name: Regenerate function documentation
+        run: Rscript -e 'roxygen2::roxygenise()'
+
+      - name: Check committed help files match source
+        run: git diff --exit-code -- man NAMESPACE
 
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-          build_args: 'c("--no-manual","--no-build-vignettes")'
+          build_args: 'c("--no-manual")'
+          args: 'c("--no-manual")'
+
+      - name: Preserve generated help files for source synchronisation
+        if: always() && matrix.config.os == 'ubuntu-latest' && matrix.config.r == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-r-help
+          path: |
+            man/
+            NAMESPACE
+          retention-days: 7

@@ -4,7 +4,6 @@ export(analyze_landscape)
 export(calculate_pollination_deficit)
 export(calculate_pollination_index)
 export(clean_occurrences)
-export(crop_dependencies)
 export(download_crop_map_real)
 export(download_environmental_layers)
 export(download_pollinator_data)
@@ -16,25 +15,36 @@ export(import_crop_data)
 export(import_crop_map)
 export(plot_pollination_deficit)
 export(plot_pollinator_map)
-export(pollinator_occurrences)
 export(predict_pollinator_distribution)
 export(prepare_predictors)
+export(select_sdm_threshold)
 export(summarize_risk_by_region)
 export(train_sdm_model)
-importFrom(dplyr,filter)
-importFrom(dplyr,mutate)
-importFrom(dplyr,select)
-importFrom(ggplot2,aes)
-importFrom(ggplot2,geom_abline)
-importFrom(ggplot2,geom_line)
-importFrom(ggplot2,labs)
-importFrom(ggplot2,theme_minimal)
-importFrom(sf,st_as_sf)
-importFrom(sf,st_centroid)
-importFrom(sf,st_coordinates)
-importFrom(sf,st_drop_geometry)
-importFrom(stats,aggregate)
-importFrom(stats,predict)
-importFrom(terra,as.points)
-importFrom(terra,crds)
-importFrom(terra,ext)
+importFrom(sf,
+  st_centroid,
+  st_coordinates,
+  st_drop_geometry
+)
+importFrom(stats,
+  aggregate,
+  as.formula,
+  complete.cases,
+  cor,
+  lm,
+  mad,
+  median,
+  na.omit,
+  predict,
+  rgamma,
+  rnorm,
+  runif
+)
+importFrom(terra,
+  as.points,
+  crds,
+  ext
+)
+importFrom(utils,
+  capture.output,
+  read.csv
+)

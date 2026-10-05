@@ -4,3 +4,6 @@
 ^\.claude$
 ^data-raw$
 ^\.github$
+^docs$
+^README\.Rmd$
+^LICENSE\.md$
