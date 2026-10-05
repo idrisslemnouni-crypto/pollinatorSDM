@@ -47,13 +47,14 @@ clean_occurrences <- function(data, env_rasters) {
   # Détection outliers : distance au centroïde par espèce
   outlier_idx <- integer()
   for (sp in unique(pts$species)) {
-    sp_pts <- pts[pts$species == sp, ]
+    species_rows <- which(pts$species == sp)
+    sp_pts <- pts[species_rows, ]
     if (nrow(sp_pts) < 5) next
     coords <- sf::st_coordinates(sp_pts)
     centroid <- apply(coords, 2, median)
     dists <- sqrt((coords[, 1] - centroid[1])^2 + (coords[, 2] - centroid[2])^2)
     thresh <- median(dists) + 3 * mad(dists)
-    outlier_idx <- c(outlier_idx, which(pts$species == sp & dists > thresh))
+    outlier_idx <- c(outlier_idx, species_rows[which(dists > thresh)])
   }
   if (length(outlier_idx) > 0) {
     pts <- pts[-outlier_idx, ]

@@ -2,110 +2,90 @@
 output: github_document
 ---
 
-<!-- badges: start -->
-[![R-CMD-check](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml)
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-<!-- badges: end -->
 
 # pollinatorSDM
 
-`pollinatorSDM` is an R package for modelling pollinator distribution and assessing pollination deficit in agricultural landscapes. It provides functions for downloading and cleaning occurrence data, preparing environmental predictors, training species distribution models, producing suitability maps, estimating pollination indices, and generating reports.
+[![R-CMD-check](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/idrisslemnouni-crypto/pollinatorSDM/actions/workflows/R-CMD-check.yaml)
 
-![Predicted pollinator suitability map](man/figures/pred_prob_suitability.png)
+An experimental R package for pollinator habitat modelling and illustrative pollination indicators. The bundled demonstration is **synthetic**. No validated regional deficit, measured crop loss or field performance score is claimed.
 
-## Overview
+## Problem and approach
 
-The package was developed as an academic project on pollinator distribution modelling and ecosystem service assessment. It aims to support a reproducible workflow for:
+Occurrence records and environmental rasters can support habitat analysis. This package provides acquisition helpers, spatial cleaning, background sampling, Random Forest classification, raster prediction and reporting. Habitat suitability and crop-dependency proxies require independent ecological evidence before informing a field decision.
 
-- downloading pollinator occurrence data,
-- cleaning spatial records,
-- preparing environmental raster predictors,
-- generating background points,
-- training and evaluating SDM models,
-- predicting pollinator suitability,
-- estimating pollination deficit,
-- creating maps and reports.
+## Architecture
+
+```mermaid
+flowchart LR
+    Occurrences --> Cleaning
+    Rasters --> Extraction
+    Cleaning --> Extraction
+    Background --> Extraction
+    Extraction --> Training
+    Training --> ValidationThreshold
+    ValidationThreshold --> HeldOutEvaluation
+    Training --> SuitabilityRaster
+    SuitabilityRaster --> IllustrativeIndicators
+```
+
+Training, validation and test observations must be distinct. Fit correlation/VIF filtering only on the training partition and apply the resulting predictor names to the other partitions; `prepare_predictors()` cannot enforce this separation for callers.
 
 ## Installation
 
-```r
-# install.packages("devtools")
-devtools::install_github("idrisslemnouni-crypto/pollinatorSDM")
-```
-
-## Main functions
-
-### Data acquisition
-
-- `download_pollinator_data()`
-- `download_environmental_layers()`
-- `import_crop_data()`
-- `import_crop_map()`
-
-### Data preparation
-
-- `clean_occurrences()`
-- `prepare_predictors()`
-- `generate_background_points()`
-
-### Modelling and prediction
-
-- `train_sdm_model()`
-- `evaluate_models()`
-- `predict_pollinator_distribution()`
-
-### Pollination analysis
-
-- `calculate_pollination_index()`
-- `calculate_pollination_deficit()`
-- `analyze_landscape()`
-- `summarize_risk_by_region()`
-
-### Visualisation and reporting
-
-- `plot_pollinator_map()`
-- `plot_pollination_deficit()`
-- `generate_recommendations()`
-- `generate_report()`
-
-## Example workflow
+R >= 4.1 and spatial system dependencies for sf/terra are required. GitHub Actions checks the declared dependency set on its configured operating systems.
 
 ```r
+install.packages("remotes")
+remotes::install_github("idrisslemnouni-crypto/pollinatorSDM")
 library(pollinatorSDM)
-
-# Download occurrence data
-occ <- download_pollinator_data(limit = 50)
-
-# Clean spatial records
-occ_clean <- clean_occurrences(occ)
-
-# Download environmental layers
-env <- download_environmental_layers()
-
-# Prepare predictors for SDM
-pred_data <- prepare_predictors(occ_clean, env)
-
-# Generate background points
-bg <- generate_background_points(env, n = 1000)
-
-# Train SDM model
-model_obj <- train_sdm_model(pred_data, bg)
-
-# Predict suitability
-pred_raster <- predict_pollinator_distribution(model_obj$model, env)
-
-# Plot map
-plot_pollinator_map(pred_raster)
 ```
 
-The package also includes functions for pollination deficit mapping and automatic report generation.
+## Reproducible synthetic example
 
-## Project context
+```r
+source(system.file("examples", "spatial_demo.R", package = "pollinatorSDM"))
+demo <- run_spatial_demo(seed = 42)
+demo$metrics
+demo$evaluation$roc_plot
+```
 
-This package focuses on pollinators and pollination services in agroecological systems. It combines species distribution modelling, spatial analysis, and agricultural data to help identify suitable habitats, vulnerable crop areas, and zones with potential pollination deficit.
+The 900 generated grid cells are split into fixed west/central/east blocks before fitting. A validation-only Youden threshold is frozen for the final block. The ROC direction always treats larger predicted probabilities as occurrence: a poor model is not rescued by flipping the test-label direction. This checks the workflow, not biological validity. No copied or unverified numeric outputs are displayed.
 
-## Author
+For an existing fitted classifier:
 
-Idriss Lemnouni  
-Engineering student in Data Science Applied to Agriculture  
-Institut Agronomique et Vétérinaire Hassan II
+```r
+threshold <- select_sdm_threshold(model, validation_data)
+result <- evaluate_models(model, test_data, threshold = threshold)
+```
+
+`evaluate_models()` defaults to a fixed 0.5 threshold. This intentionally replaces the former test-set Youden selection. Callers must update analyses that relied on that optimistic behaviour.
+
+## Data and scientific limits
+
+- Bundled pollinator coordinates are simulated, not GBIF observations.
+- Bundled crop-dependency coefficients are illustrative literature summaries, without a row-level extraction audit. They are not field measurements.
+- Acquisition helpers can call GBIF/geodata. Check source rights, attribution, units, coverage and failures before use; no externally acquired scientific benchmark is supplied here.
+- The environmental downloader currently substitutes zero rasters for unavailable landcover layers. This fallback is explicitly announced and must be rejected or independently audited for a real study.
+- Presence/background discrimination is not observed absence, abundance or calibrated pollination service. Recommendation and deficit class rules are heuristics.
+- The existing background distance approximation assumes geographic coordinates; its projected-CRS limitations require correction before a real spatial study.
+- No farm identities, independent Moroccan field dataset or ecological validation are available. Existing figures from the old synthetic example are not treated as scientific results.
+
+## Project structure and tests
+
+`R/` contains functions, `man/` their help pages, `data/` illustrative datasets, `inst/examples/` the seeded spatial example, `vignettes/` an executed demonstration and `tests/testthat/` meaningful regression checks.
+
+```r
+install.packages(c("devtools", "rcmdcheck"))
+devtools::test()
+rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")
+```
+
+Tests cover spatial cleaning and prediction, input validation, fixed-threshold evaluation, inverted-label ROC direction and disjoint demo partitions. The GitHub workflow builds the vignette and runs package checks. Its live result is available through the badge; no successful run is inferred from file presence.
+
+## Next steps
+
+Build a rights-cleared occurrence/environment manifest; audit units and source failures; fit preprocessing inside spatial training folds; validate background distances in a metric CRS; compare to ecological baselines and independent field observations.
+
+## Author and licence
+
+Idriss Lemnouni — engineering student in Data Science Applied to Agriculture, IAV Hassan II. Maintenance and documentation improvements are AI-assisted and reviewed through tests. Code: [MIT](LICENSE.md), with the R licence record in [LICENSE](LICENSE). Source data retain their own rights.

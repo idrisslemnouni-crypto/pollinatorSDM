@@ -1,0 +1,41 @@
+test_that("test labels never select thresholds or reverse ROC direction", {
+  train <- make_train_df(50, seed = 101)
+  validation <- make_train_df(25, seed = 102)
+  test <- make_train_df(25, seed = 103)
+  set.seed(104)
+  model <- train_sdm_model(train, ntree = 50)
+  threshold <- select_sdm_threshold(model, validation)
+  first <- evaluate_models(model, test, threshold)
+  inverted <- test
+  inverted$occurrence <- factor(1 - as.integer(as.character(test$occurrence)), levels = c(0, 1))
+  second <- evaluate_models(model, inverted, threshold)
+  expect_equal(first$Threshold, threshold)
+  expect_equal(second$Threshold, threshold)
+  expect_equal(first$AUC + second$AUC, 1, tolerance = 1e-8)
+  expect_lt(second$AUC, 0.5)
+  expect_equal(evaluate_models(model, test)$Threshold, 0.5)
+})
+
+test_that("invalid labels and thresholds are rejected", {
+  train <- make_train_df(25, seed = 105)
+  set.seed(106)
+  model <- train_sdm_model(train, ntree = 50)
+  expect_error(evaluate_models(model, train, NA_real_), "threshold")
+  expect_error(evaluate_models(model, train, c(0.2, 0.4)), "threshold")
+  expect_error(evaluate_models(model, train, 1.1), "threshold")
+  expect_error(select_sdm_threshold(model, train[train$occurrence == "0", ]), "both classes")
+  train$occurrence[1] <- NA
+  expect_error(evaluate_models(model, train), "both classes")
+  expect_error(evaluate_models(list(), train), "randomForest")
+})
+
+test_that("synthetic spatial demo keeps all three blocks disjoint", {
+  source(system.file("examples", "spatial_demo.R", package = "pollinatorSDM"), local = TRUE)
+  demo <- run_spatial_demo()
+  expect_length(intersect(demo$splits$train, demo$splits$validation), 0)
+  expect_length(intersect(demo$splits$train, demo$splits$test), 0)
+  expect_length(intersect(demo$splits$validation, demo$splits$test), 0)
+  expect_equal(length(unique(unlist(demo$splits))), 900)
+  expect_true(is.finite(demo$metrics$AUC))
+  expect_equal(demo$source, "synthetic_seeded_spatial_grid")
+})
