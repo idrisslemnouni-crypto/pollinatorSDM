@@ -23,6 +23,7 @@ Imports:
     pROC,
     stats
 Suggests:
+    roxygen2,
     testthat (>= 3.0.0),
     rgbif,
     geodata

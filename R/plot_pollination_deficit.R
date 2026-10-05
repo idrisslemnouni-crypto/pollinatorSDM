@@ -1,3 +1,8 @@
+#' Plot illustrative pollination deficit classes
+#' @param deficit_raster A single-layer terra SpatRaster.
+#' @param title Plot title.
+#' @return A ggplot object using heuristic classes, not field-calibrated risk.
+#' @export
 plot_pollination_deficit <- function(deficit_raster, title = "Pollination Deficit") {
   df <- as.data.frame(deficit_raster, xy = TRUE, na.rm = TRUE)
   names(df)[3] <- "value"
